@@ -65,6 +65,10 @@ defmodule RamboWeb do
     end
   end
 
+  def authentication do
+    # TODO
+  end
+
   @doc """
   When used, dispatch to the appropriate controller/live_view/etc.
   """

@@ -1,12 +1,19 @@
 defmodule RamboWeb.Router do
   use RamboWeb, :router
 
+#  pipeline :auth do
+#    plug HelloWeb.Authentication
+#  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
 
   scope "/api", RamboWeb do
     pipe_through :api
+
+    scope "/v1", V1, as: :v1 do
+    end
   end
 
   pipeline :browser do
@@ -23,7 +30,6 @@ defmodule RamboWeb.Router do
 #    get "/", PageController, :home
     get "/hello", HelloController, :index
     get "/hello/:messenger", HelloController, :show
-
   end
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:rambo, :dev_routes) do
