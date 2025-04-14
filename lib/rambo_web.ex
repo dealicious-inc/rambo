@@ -56,6 +56,15 @@ defmodule RamboWeb do
     end
   end
 
+  def html do
+    quote do
+      use Phoenix.Component
+
+      import Phoenix.HTML
+      alias Phoenix.LiveView.JS
+    end
+  end
+
   @doc """
   When used, dispatch to the appropriate controller/live_view/etc.
   """

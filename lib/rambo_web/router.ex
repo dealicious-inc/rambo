@@ -9,6 +9,22 @@ defmodule RamboWeb.Router do
     pipe_through :api
   end
 
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_flash
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+  # Add the :browser pipeline to the scope
+  scope "/", RamboWeb do
+    pipe_through :browser
+
+#    get "/", PageController, :home
+    get "/hello", HelloController, :index
+    get "/hello/:messenger", HelloController, :show
+
+  end
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:rambo, :dev_routes) do
     # If you want to use the LiveDashboard in production, you should put

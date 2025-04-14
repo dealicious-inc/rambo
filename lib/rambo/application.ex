@@ -8,14 +8,14 @@ defmodule Rambo.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      {
-        Gnat,
-        %{
-          name: :gnat_conn,
-          host: ~c"127.0.0.1",
-          port: 4222
-        }
-      },
+#      {
+#        Gnat,
+#        %{
+#          name: :gnat_conn, # process이름
+#          host: ~c"127.0.0.1",
+#          port: 4222
+#        }
+#      },
       RamboWeb.Telemetry,
       Rambo.Repo,
       {DNSCluster, query: Application.get_env(:rambo, :dns_cluster_query) || :ignore},
@@ -23,7 +23,7 @@ defmodule Rambo.Application do
       # Start a worker by calling: Rambo.Worker.start_link(arg)
       # {Rambo.Worker, arg},
       # Start to serve requests, typically the last entry
-      Rambo.NatsSubscriber,
+#      Rambo.NatsSubscriber,
       RamboWeb.Endpoint,
     ]
 
