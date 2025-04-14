@@ -25,3 +25,7 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 rambo-*.tar
 
+# IntelliJ IDEA 관련 파일 무시
+.idea/
+*.iml
+out/
