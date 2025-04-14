@@ -32,6 +32,7 @@ defmodule RamboWeb do
   def channel do
     quote do
       use Phoenix.Channel
+      use RamboWeb.RoomChannel
     end
   end
 

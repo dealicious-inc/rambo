@@ -9,11 +9,10 @@ defmodule RamboWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/api", RamboWeb do
+  scope "/api", RamboWeb.Api do
     pipe_through :api
 
-    scope "/v1", V1, as: :v1 do
-    end
+    get "/subscribe/:messenger", SocketController, :subscribe
   end
 
   pipeline :browser do
