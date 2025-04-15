@@ -1,0 +1,30 @@
+services:
+  db:
+    image: mysql:latest
+    container_name: rambo-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "1234"
+      MYSQL_DATABASE: "rambo_dev"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: rambo-dynamodb
+    ports:
+      - "8000:8000"
+    volumes:
+      - dynamo_data:/home/dynamodblocal/data
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+
+  nats:
+    image: nats:latest
+    container_name: rambo-nats
+    ports:
+      - "4222:4222"
+
+volumes:
+  db_data:
+  dynamo_data:
