@@ -1,7 +1,6 @@
 defmodule RamboWeb.UserSocket do
   use Phoenix.Socket
-
-  channel "room:*", RamboWeb.RoomChannel
+  require Logger
 
   # A Socket handler
   #
@@ -53,4 +52,7 @@ defmodule RamboWeb.UserSocket do
   # Returning `nil` makes this socket anonymous.
   @impl true
   def id(_socket), do: nil
+
+
+  channel "room:*", RamboWeb.RoomChannel
 end

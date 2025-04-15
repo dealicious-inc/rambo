@@ -23,7 +23,8 @@ defmodule Rambo.Application do
       # Start a worker by calling: Rambo.Worker.start_link(arg)
       # {Rambo.Worker, arg},
       # Start to serve requests, typically the last entry
-#      Rambo.NatsSubscriber,
+      # Rambo.NatsSubscriber,
+      RamboWeb.Presence,
       RamboWeb.Endpoint,
     ]
 

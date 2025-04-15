@@ -56,7 +56,7 @@ defmodule RamboWeb.Endpoint do
 
   plug :introspect
   plug RamboWeb.Router
-  plug RamboWeb.Authentication
+#  plug RamboWeb.Authentication
 
   def introspect(conn, _opts) do
     IO.puts """
