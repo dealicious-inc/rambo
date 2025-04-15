@@ -71,8 +71,18 @@ defmodule RamboWeb.RoomChannel do
 
   # 클라이언트 → 서버로 push한 이벤트 처리
   def handle_in("new:msg", msg, socket) do
-    broadcast! socket, "new:msg", %{user: msg["user"], body: msg["body"]}
-    {:reply, {:ok, %{msg: msg["body"]}}, assign(socket, :user, msg["user"])}
+#    broadcast! socket, "new:msg", %{user: msg["user"], body: msg["body"]}
+#    {:reply, {:ok, %{msg: msg["body"]}}, assign(socket, :user, msg["user"])}
+
+    payload = %{user: msg["user"], body: msg["body"]}
+
+    # 1. 채널 broadcast (로컬 사용자들)
+    broadcast! socket, "new:msg", payload
+
+    # 2. NATS로 전파
+    Gnat.pub(:gnat_conn, "room.lobby", Jason.encode!(payload))
+
+    {:reply, {:ok, payload}, socket}
   end
 
   def handle_out("new:msg", payload, socket) do
