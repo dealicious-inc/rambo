@@ -12,10 +12,24 @@ defmodule Rambo.Application do
     children = [
       RamboWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:rambo, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Rambo.PubSub},
       {Finch, name: Rambo.Finch},
       RamboWeb.Endpoint,
-      Rambo.Repo, # db 설정
+      Rambo.Repo,
+      %{
+        id: Rambo.Nats.Connection,
+        start: {Rambo.Nats.Connection, :start_link, [[]]},
+        type: :worker,
+        restart: :permanent,
+        shutdown: 500
+      },
+      %{
+        id: :nats_subscriber,
+        start: {Task, :start_link, [fn ->
+          Rambo.Chat.Nats.subscribe("1")
+          Rambo.Chat.Nats.listen_loop()
+         end]}
+      },
+      {Phoenix.PubSub, name: Rambo.PubSub},
     ]
 
     opts = [strategy: :one_for_one, name: Rambo.Supervisor]

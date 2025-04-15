@@ -22,6 +22,11 @@ config :rambo, RamboWeb.Endpoint,
   pubsub_server: Rambo.PubSub,
   live_view: [signing_salt: "URCMVFPk"]
 
+config :rambo, Rambo.PubSub,
+  adapter: PhoenixPubsubNats,
+  connection: :gnat,
+  json_library: Jason
+
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails

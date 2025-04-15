@@ -38,12 +38,14 @@ defmodule RamboWeb.Api.RoomController do
     case ExAws.Dynamo.put_item("messages", item) |> ExAws.request() do
       {:ok, _result} ->
         payload = %{
-          user: user_id,
-          message: content,
-          timestamp: created_at
+          "user" => user_id,
+          "message" => content,
+          "timestamp" => created_at
         }
 
-        RamboWeb.Endpoint.broadcast("room:#{room_id}", "new_msg", payload)
+#        RamboWeb.Endpoint.broadcast("room:#{room_id}", "new_msg", payload)
+        Rambo.Chat.Nats.publish("#{room_id}", payload)
+
         json(conn, %{status: "sent"})
 
       {:error, reason} ->

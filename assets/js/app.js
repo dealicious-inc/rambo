@@ -1,31 +1,33 @@
-import { channel } from "./socket.js";
+import {Socket} from "phoenix"
 
+// 1. 소켓 연결
+const socket = new Socket("/socket", {params: {userToken: "123"}})
+socket.connect()
+
+// 2. 채널 참여 (예: room:1)
+const roomId = "1"
+const channel = socket.channel("room:1", {})
+
+// 3. 채널 join
 channel.join()
-    .receive("ok", resp => console.log("✅ Joined", resp))
-    .receive("error", err => console.error("❌ Failed", err));
+    .receive("ok", resp => {
+        console.log("✅ Joined successfully", resp)
+    })
+    .receive("error", resp => {
+        console.error("❌ Unable to join", resp)
+    })
 
+// 4. 서버에서 오는 메시지 수신
 channel.on("new_msg", payload => {
-    const li = document.createElement("li");
-    li.textContent = `${payload.user}: ${payload.message}`;
-    document.getElementById("messages").appendChild(li);
-});
+    console.log(`[RECEIVED] ${payload.user}: ${payload.message}`)
+})
 
-document.getElementById("send-button").addEventListener("click", () => {
-    const input = document.getElementById("chat-input");
-    const message = input.value.trim();
-    if (message) {
-        channel.push("new_msg", { user: "alice", message });
-        input.value = "";
-    }
-});
+if (document.getElementById("messages")) {
+    channel.on("new_msg", (payload) => {
+        const messageList = document.getElementById("messages");
+        const li = document.createElement("li");
+        li.textContent = `${payload.user}: ${payload.message}`;
+        messageList.appendChild(li);
+    });
+}
 
-document.getElementById("chat-input").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-        const input = document.getElementById("chat-input");
-        const message = input.value.trim();
-        if (message) {
-            channel.push("new_msg", { user: "alice", message });
-            input.value = "";
-        }
-    }
-});
