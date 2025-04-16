@@ -29,3 +29,5 @@ rambo-*.tar
 .idea/
 *.iml
 out/
+
+**/.DS_Store
