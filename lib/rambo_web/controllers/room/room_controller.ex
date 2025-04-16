@@ -43,7 +43,6 @@ defmodule RamboWeb.Api.RoomController do
           "timestamp" => created_at
         }
 
-#        RamboWeb.Endpoint.broadcast("room:#{room_id}", "new_msg", payload)
         Rambo.Nats.publish("#{room_id}", payload)
 
         json(conn, %{status: "sent"})
