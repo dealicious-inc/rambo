@@ -80,12 +80,12 @@ defmodule RamboWeb.RoomChannel do
     broadcast! socket, "new:msg", payload
 
     # 2. NATS로 전파
-    Gnat.pub(:gnat_conn, "room.lobby", Jason.encode!(payload))
+    Gnat.pub(:gnat, "room.lobby", Jason.encode!(payload))
 
     {:reply, {:ok, payload}, socket}
   end
 
-  def handle_out("new:msg", payload, socket) do
+  def handle_out("new:msg", _payload, _socket) do
     # TODO 서버 → 클라이언트 메시지 push 전에 인터셉트해서 처리할거 하기
   end
 end

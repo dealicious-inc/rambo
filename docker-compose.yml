@@ -16,7 +16,9 @@ services:
     image: nats:latest
     container_name: rambo-nats
     ports:
-      - "4222:4222"
+      - "4222:4222"   # 클라이언트 연결용 포트
+      - "6222:6222"   # 클러스터링용 포트
+      - "8222:8222"   # HTTP 모니터링/관리용 포트 (옵션)
 
 volumes:
   db_data:

@@ -8,29 +8,25 @@ defmodule Rambo.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      {
-        Gnat,
-        %{
-          name: :gnat_conn, # process이름
-          host: ~c"127.0.0.1",
-          port: 4222
-        }
-      },
-      Rambo.NatsSubscriber,
       RamboWeb.Telemetry,
       Rambo.Repo,
       {DNSCluster, query: Application.get_env(:rambo, :dns_cluster_query) || :ignore},
+      {Gnat.ConnectionSupervisor,
+        %{
+          name: :gnat,
+          connection_settings: [
+            %{host: 'localhost', port: 4222}
+          ]
+        }},
+      {Rambo.NatsSubscriber, []},
       {Phoenix.PubSub, name: Rambo.PubSub},
-      # Start a worker by calling: Rambo.Worker.start_link(arg)
-      # {Rambo.Worker, arg},
-      # Start to serve requests, typically the last entry
       RamboWeb.Presence,
       RamboWeb.Endpoint,
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Rambo.Supervisor]
+    opts = [strategy: :rest_for_one, name: Rambo.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
