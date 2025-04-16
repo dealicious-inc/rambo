@@ -24,7 +24,7 @@ defmodule Rambo.Application do
       },
       %{
           id: :nats_subscriber,
-          start: {Rambo.Chat.NatsStarter, :start_link, [[]]}
+          start: {Rambo.Nats.Starter, :start_link, [[]]}
        },
       {Phoenix.PubSub, name: Rambo.PubSub},
     ]

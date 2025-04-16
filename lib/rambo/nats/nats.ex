@@ -1,4 +1,4 @@
-defmodule Rambo.Chat.Nats do
+defmodule Rambo.Nats do
   @topic_prefix "chat.room."
 
   def publish(room, %{"user" => user, "message" => message}) do
