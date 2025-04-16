@@ -23,12 +23,9 @@ defmodule Rambo.Application do
         shutdown: 500
       },
       %{
-        id: :nats_subscriber,
-        start: {Task, :start_link, [fn ->
-          Rambo.Chat.Nats.subscribe("1")
-          Rambo.Chat.Nats.listen_loop()
-         end]}
-      },
+          id: :nats_subscriber,
+          start: {Rambo.Chat.NatsStarter, :start_link, [[]]}
+       },
       {Phoenix.PubSub, name: Rambo.PubSub},
     ]
 

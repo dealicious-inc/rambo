@@ -5,8 +5,7 @@ const socket = new Socket("/socket", {params: {userToken: "123"}})
 socket.connect()
 
 // 2. 채널 참여 (예: room:1)
-const roomId = "1"
-const channel = socket.channel("room:1", {})
+const channel = socket.channel("room:14", {})
 
 // 3. 채널 join
 channel.join()

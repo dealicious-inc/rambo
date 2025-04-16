@@ -24,7 +24,13 @@ services:
     container_name: rambo-nats
     ports:
       - "4222:4222"
+    volumes:
+      - ./nats-server.conf:/etc/nats/nats-server.conf
+      - ./certs:/etc/nats/certs
+      - nats_data:/data
+    command: -c /etc/nats/nats-server.conf
 
 volumes:
   db_data:
   dynamo_data:
+  nats_data:
