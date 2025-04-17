@@ -15,6 +15,8 @@ services:
   nats:
     image: nats:latest
     container_name: rambo-nats
+    command:
+    - -js
     ports:
       - "4222:4222"   # 클라이언트 연결용 포트
       - "6222:6222"   # 클러스터링용 포트

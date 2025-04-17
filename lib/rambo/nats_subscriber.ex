@@ -3,7 +3,7 @@ defmodule Rambo.NatsSubscriber do
   require Logger
 
   def start_link(_opts) do
-    Logger.info("NATS subscriber starting #{__MODULE__}")
+    Logger.info("JetStream subscriber starting #{__MODULE__}")
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
@@ -15,46 +15,31 @@ defmodule Rambo.NatsSubscriber do
   end
 
   def handle_info(:subscribe, state) do
-    case ensure_gnat_connection(5) do
-      :ok ->
-        case Gnat.sub(:gnat, self(), "room.lobby") do
-          {:ok, sid} ->
-            Logger.info("✅ Subscribed to NATS topic: room.lobby")
-            {:noreply, Map.put(state, :sid, sid)}
-          error ->
-            Logger.error("❌ Failed to subscribe to NATS: #{inspect(error)}")
-            # 재시도
-            Process.send_after(self(), :subscribe, 2000)
-            {:noreply, state}
-        end
-      :error ->
-        Logger.error("❌ NATS connection not available")
+    case Jetstream.subscribe(:jetstream, self(), "chat.room.lobby",
+             durable_name: "chat_room_lobby",
+             deliver_policy: :all,
+             ack_policy: :explicit
+           ) do
+      {:ok, subscription} ->
+        Logger.info("✅ JetStream PushConsumer 구독 완료: chat.room.lobby")
+        {:noreply, Map.put(state, :subscription, subscription)}
+
+      error ->
+        Logger.error("❌ JetStream subscribe 실패: #{inspect(error)}")
         Process.send_after(self(), :subscribe, 2000)
         {:noreply, state}
     end
   end
 
-  defp ensure_gnat_connection(0), do: :error
-  defp ensure_gnat_connection(attempts) do
-    case Process.whereis(:gnat) do
-      nil ->
-        Logger.debug("Waiting for NATS connection... (#{attempts} attempts left)")
-        Process.sleep(1000)
-        ensure_gnat_connection(attempts - 1)
-      _pid ->
-        Logger.debug("NATS connection found")
-        :ok
-    end
-  end
+  def handle_info({:msg, msg}, state) do
+    Logger.debug("📥 JetStream 메시지 수신: #{msg.body}")
 
-  def handle_info({:msg, %{topic: "room.lobby", body: body}}, state) do
-    Logger.debug("📥 NATS message received: #{body}")
-
-    case Jason.decode(body) do
+    case Jason.decode(msg.body) do
       {:ok, payload} ->
         RamboWeb.Endpoint.broadcast!("room:lobby", "new:msg", payload)
+        Jetstream.ack(msg)
       {:error, _} ->
-        Logger.error("❌ Failed to decode NATS payload")
+        Logger.error("❌ 메시지 디코딩 실패")
     end
 
     {:noreply, state}

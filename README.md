@@ -43,3 +43,17 @@ mix ecto.rollback	마이그레이션 되돌리기
 mix ecto.gen.migration name	새 마이그레이션 파일 생성 (timestamp_name.exs)
 mix ecto.reset	drop → create → migrate 를 한 번에 수행
 ```
+
+
+```
+[유저 A] ─ send msg ─▶ Phoenix
+           ↓
+     Gnat.pub("chat.to_filter")
+           ↓
+     [Filter+Logic 컨슈머]
+           ├─ 저장
+           ├─ 필터링
+           └─ Gnat.pub("chat.to_broadcast")
+                        ↓
+     [Phoenix Gnat.sub] → Endpoint.broadcast!(room:lobby, "new:msg", payload)
+```

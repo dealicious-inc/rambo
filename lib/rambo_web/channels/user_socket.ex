@@ -36,7 +36,10 @@ defmodule RamboWeb.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   @impl true
-  def connect(_params, socket, _connect_info) do
+  def connect(_params, socket, connect_info) do
+    Logger.info("socket: #{inspect socket}")
+    Logger.info("connect_info: #{inspect connect_info}")
+     IO.inspect connect_info
     {:ok, socket}
   end
 

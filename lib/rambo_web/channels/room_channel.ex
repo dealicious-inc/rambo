@@ -5,8 +5,9 @@ defmodule RamboWeb.RoomChannel do
 
   def join("room:lobby", msg, socket) do
     Process.flag(:trap_exit, true)
-    :timer.send_interval(5000, :ping)
+    :timer.send_interval(50000, :ping)
     socket = assign(socket, :name, msg["user"])
+    Logger.info("#{inspect socket}")
     send(self(), {:after_join, msg}) # 이게 있어야 after_join 동작함!
     {:ok, socket}
   end
@@ -17,6 +18,10 @@ defmodule RamboWeb.RoomChannel do
 
   # 이벤트를 수신했을 때 호출되는 콜백
   # 비동기 메시지 수신 처리
+  @spec handle_info(
+          :ping | {:after_join, nil | maybe_improper_list() | map()},
+          Phoenix.Socket.t()
+        ) :: {:noreply, Phoenix.Socket.t()}
   def handle_info({:after_join, msg}, socket) do
     broadcast! socket, "user:entered", %{user: msg["user"], body: "#{msg["user"]} 두둥 등장!"}
 #    push socket, "join", %{status: "connected"}
@@ -64,6 +69,7 @@ defmodule RamboWeb.RoomChannel do
   # 클라이언트가 채널을 떠나거나 예외로 종료될 때 호출
   def terminate(reason, socket) do
     Logger.debug("> leave reason: #{inspect reason}, user: #{socket.assigns[:name]}")
+    payload = %{user: socket.assigns[:name], body: "#{socket.assigns[:name]} 퇴장!"}
     # reason: 종료 사유 (:normal, {:shutdown, :left}, :closed, {:badmatch, ...} )등
     broadcast! socket, "user:left", %{user: socket.assigns[:name], body: "#{socket.assigns[:name]} 퇴장!"}
     :ok
@@ -71,16 +77,13 @@ defmodule RamboWeb.RoomChannel do
 
   # 클라이언트 → 서버로 push한 이벤트 처리
   def handle_in("new:msg", msg, socket) do
-#    broadcast! socket, "new:msg", %{user: msg["user"], body: msg["body"]}
-#    {:reply, {:ok, %{msg: msg["body"]}}, assign(socket, :user, msg["user"])}
-
     payload = %{user: msg["user"], body: msg["body"]}
 
-    # 1. 채널 broadcast (로컬 사용자들)
+    # 1. 채널 broadcast
     broadcast! socket, "new:msg", payload
 
-    # 2. NATS로 전파
-    Gnat.pub(:gnat, "room.lobby", Jason.encode!(payload))
+    # 2. JetStream 발행
+    Jetstream.publish(:jetstream, "chat.room.lobby", Jason.encode!(payload))
 
     {:reply, {:ok, payload}, socket}
   end
