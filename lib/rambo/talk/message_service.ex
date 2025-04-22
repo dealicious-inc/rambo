@@ -25,7 +25,7 @@ defmodule Rambo.Talk.MessageService do
     end
   end
 
-  def fetch_recent_messages(room_id, limit \\ 20) do
+  def fetch_recent_messages(room_id, limit) do
     MessageStore.get_messages(room_id, limit)
   end
 

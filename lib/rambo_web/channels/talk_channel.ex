@@ -4,6 +4,7 @@ defmodule RamboWeb.TalkChannel do
   alias Rambo.TalkRoomService
   alias Rambo.Talk.Subscriber
   alias Rambo.Nats.JetStream
+  alias Rambo.Talk.MessageService
 
   def join("talk:" <> room_id_str, %{"user_id" => user_id_str}, socket) do
     with {room_id, _} <- Integer.parse(room_id_str),

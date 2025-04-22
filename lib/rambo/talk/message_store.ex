@@ -34,7 +34,7 @@ defmodule Rambo.Talk.MessageStore do
     )
     |> ExAws.request()
     |> case do
-         {:ok, %{"Items" => items}} -> {:ok, Enum.map(items, &Dynamo.decode!/1)}
+         {:ok, %{"Items" => items}} -> {:ok, Enum.map(items, &Dynamo.decode_item/1)}
          error -> error
        end
   end
