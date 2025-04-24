@@ -3,9 +3,9 @@ defmodule RamboWeb.Api.TalkRoomController do
 
   alias Rambo.TalkRoomService
 
-  # 그룹 채팅방 생성
-  def create(conn, %{"name" => name}) do
-    case TalkRoomService.create_room(%{room_type: "group", name: name}) do
+  # 채팅방 생성
+  def create(conn, %{"name" => name, "room_type" => room_type}) do
+    case TalkRoomService.create_room(%{room_type: room_type, name: name}) do
       {:ok, room} ->
         json(conn, %{room_id: room.id, name: room.name})
       {:error, changeset} ->
@@ -13,24 +13,13 @@ defmodule RamboWeb.Api.TalkRoomController do
     end
   end
 
-  # 1:1 채팅방 생성 or 찾기
-  def private(conn, %{"user1_id" => user1_id, "user2_id" => user2_id}) do
-    with {uid1, _} <- Integer.parse(user1_id),
-         {uid2, _} <- Integer.parse(user2_id),
-         {:ok, room} <- TalkRoomService.find_or_create_private_room(uid1, uid2) do
-      json(conn, %{room_id: room.id, name: room.name})
-    else
-      _ -> conn |> put_status(:bad_request) |> json(%{error: "Invalid request"})
-    end
-  end
-
   # 채팅방 참여
   def join(conn, %{"id" => room_id, "user_id" => user_id}) do
-    with {rid, _} <- Integer.parse(room_id),
-         {uid, _} <- Integer.parse(user_id),
-         {:ok, _} <- TalkRoomService.join_user(rid, uid) do
-      json(conn, %{message: "joined"})
-    else
+    rid = if is_binary(room_id), do: String.to_integer(room_id), else: room_id
+    uid = if is_binary(user_id), do: String.to_integer(user_id), else: user_id
+
+    case TalkRoomService.join_user(rid, uid) do
+      {:ok, _} -> json(conn, %{message: "joined"})
       _ -> conn |> put_status(:bad_request) |> json(%{error: "Join failed"})
     end
   end
@@ -59,6 +48,28 @@ defmodule RamboWeb.Api.TalkRoomController do
       json(conn, %{result: "stored", item: item})
     else
       _ -> conn |> put_status(:bad_request) |> json(%{error: "Failed to store or publish message"})
+    end
+  end
+
+  def messages(conn, %{"id" => room_id} = params) do
+    limit = Map.get(params, "limit", "20") |> String.to_integer()
+    last_seen_key = Map.get(params, "last_seen_key")
+
+    opts =
+      [limit: limit] ++
+      if last_seen_key, do: [last_seen_key: last_seen_key], else: []
+
+    case Rambo.Talk.MessageService.fetch_recent_messages(room_id, opts) do
+      {:ok, messages, last_key} ->
+        json(conn, %{messages: messages, last_key: last_key})
+
+      {:ok, messages} ->
+        json(conn, %{messages: messages})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: inspect(reason)})
     end
   end
 end

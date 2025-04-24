@@ -25,8 +25,8 @@ defmodule Rambo.Talk.MessageService do
     end
   end
 
-  def fetch_recent_messages(room_id, limit) do
-    MessageStore.get_messages(room_id, limit)
+  def fetch_recent_messages(room_id, opts \\ []) do
+    MessageStore.get_messages(room_id, opts)
   end
 
   def mark_as_read(room_id, user_id, last_read_key) do

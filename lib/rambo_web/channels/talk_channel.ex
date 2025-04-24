@@ -38,10 +38,22 @@ defmodule RamboWeb.TalkChannel do
     {:noreply, socket}
   end
 
-  def handle_in("fetch_messages", _payload, socket) do
+  def handle_in("fetch_messages", payload, socket) do
     room_id = socket.assigns.room_id
 
-    case MessageService.fetch_recent_messages("#{room_id}", 30) do
+    opts =
+      payload
+      |> Map.take(["limit", "last_seen_key"])
+      |> Enum.map(fn
+        {"limit", v} -> {:limit, v}
+        {"last_seen_key", v} -> {:last_seen_key, v}
+      end)
+
+    case MessageService.fetch_recent_messages("#{room_id}", opts) do
+      {:ok, messages, last_key} ->
+        push(socket, "messages", %{messages: messages, last_key: last_key})
+        {:noreply, socket}
+
       {:ok, messages} ->
         push(socket, "messages", %{messages: messages})
         {:noreply, socket}
@@ -58,6 +70,11 @@ defmodule RamboWeb.TalkChannel do
 
     case MessageService.mark_as_read(room_id, user_id, message_id) do
       {_count, _} ->
+        broadcast_from!(socket, "message_read", %{
+          user_id: user_id,
+          message_id: message_id
+        })
+
         {:noreply, socket}
 
       _ ->

@@ -39,11 +39,10 @@ aws dynamodb create-table \
 ```
 
 ```angular2html
-aws dynamodb create-table \aws dynamodb create-table \
---endpoint-url http://localhost:8000 \
+aws dynamodb create-table \
 --table-name talk_messages \
 --attribute-definitions \
-AttributeName=room_id,AttributeType=S \
+AttributeName=room_id,AttributeType=N \
 AttributeName=message_id,AttributeType=S \
 --key-schema \
 AttributeName=room_id,KeyType=HASH \
@@ -51,16 +50,5 @@ AttributeName=message_id,KeyType=RANGE \
 --billing-mode PAY_PER_REQUEST \
 --endpoint-url http://localhost:8000 \
 --region ap-northeast-2
-  --endpoint-url http://localhost:8000 \
-  --table-name talk_messages \
-  --attribute-definitions \
-    AttributeName=room_id,AttributeType=S \
-    AttributeName=message_id,AttributeType=S \
-  --key-schema \
-    AttributeName=room_id,KeyType=HASH \
-    AttributeName=message_id,KeyType=RANGE \
-  --billing-mode PAY_PER_REQUEST \
-  --endpoint-url http://localhost:8000 \
-  --region ap-northeast-2
 ```
 
