@@ -5,11 +5,12 @@ defmodule Rambo.Talk.MessageStore do
 
   def store_message(attrs) do
     message_id = "MSG##{System.system_time(:millisecond)}"
+    sender_id = if is_integer(attrs["sender_id"] || attrs[:sender_id]), do: attrs["sender_id"] || attrs[:sender_id], else: String.to_integer("#{attrs["sender_id"] || attrs[:sender_id]}")
 
     item = %{
       "room_id" => String.to_integer("#{attrs["room_id"] || attrs[:room_id]}"),
       "message_id" => message_id,
-      "sender_id" => String.to_integer("#{attrs["sender_id"] || attrs[:sender_id]}"),
+      "sender_id" => sender_id,
       "message" => attrs["message"] || attrs[:message],
       "message_type" => Map.get(attrs, "message_type") || Map.get(attrs, :message_type, "text"),
       "sent_at" => DateTime.utc_now() |> DateTime.to_iso8601()

@@ -24,6 +24,7 @@ services:
     container_name: rambo-nats
     ports:
       - "4222:4222"
+      - "8222:8222"
     volumes:
       - nats_data:/data
 

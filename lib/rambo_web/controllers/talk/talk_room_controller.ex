@@ -38,7 +38,7 @@ defmodule RamboWeb.Api.TalkRoomController do
 
   def send_message(conn, %{"id" => room_id, "sender_id" => sender_id, "message" => message}) do
     with {rid, _} <- Integer.parse(room_id),
-         {sid, _} <- Integer.parse(sender_id),
+         sid when is_integer(sid) <- sender_id,
          {:ok, item} <- Rambo.Talk.MessageStore.store_message(%{
            room_id: "#{rid}",
            sender_id: sid,
@@ -72,4 +72,5 @@ defmodule RamboWeb.Api.TalkRoomController do
         |> json(%{error: inspect(reason)})
     end
   end
+
 end
