@@ -3,24 +3,45 @@ defmodule Rambo.Talk.MessageStore do
 
   @table "talk_messages"
 
+  require Logger
+
   def store_message(attrs) do
     message_id = "MSG##{System.system_time(:millisecond)}"
-    sender_id = if is_integer(attrs["sender_id"] || attrs[:sender_id]), do: attrs["sender_id"] || attrs[:sender_id], else: String.to_integer("#{attrs["sender_id"] || attrs[:sender_id]}")
+
+    # sender_id가 문자열로 오면 정수로 변환
+    sender_id =
+      case attrs["sender_id"] || attrs[:sender_id] do
+        nil ->
+          Logger.error("Sender ID is missing in the request")
+          raise "sender_id is required"
+        id when is_integer(id) -> id
+        id -> String.to_integer(id)
+      end
 
     item = %{
-      "room_id" => String.to_integer("#{attrs["room_id"] || attrs[:room_id]}"),
+      "id" => attrs[:ddb_id],
       "message_id" => message_id,
+      "name" => attrs["name"] || attrs[:name],
       "sender_id" => sender_id,
       "message" => attrs["message"] || attrs[:message],
       "message_type" => Map.get(attrs, "message_type") || Map.get(attrs, :message_type, "text"),
       "sent_at" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
+    # 로깅: 저장할 항목 출력
+    Logger.info("Attempting to store message: #{inspect(item)}")
+
+    # DynamoDB에 데이터를 삽입
     ExAws.Dynamo.put_item(@table, item)
     |> ExAws.request()
     |> case do
-         {:ok, _} -> {:ok, item}
-         error -> error
+         {:ok, _} ->
+           Logger.info("✅ Successfully stored the message with ID: #{message_id}")
+           {:ok, item}
+
+         error ->
+           Logger.error("🚨 Failed to store the message. Error: #{inspect(error)}")
+           error
        end
   end
 

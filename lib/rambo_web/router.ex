@@ -31,6 +31,7 @@ defmodule RamboWeb.Router do
     get "/users", UserController, :index
     post "/users", UserController, :create
 
+    get "/talk_rooms", TalkRoomController, :index
     post "/talk_rooms", TalkRoomController, :create
     post "/talk_rooms/private", TalkRoomController, :private
     post "/talk_rooms/:id/join", TalkRoomController, :join

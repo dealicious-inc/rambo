@@ -9,9 +9,9 @@ defmodule Rambo.TalkRoomService do
   import Ecto.Query
 
   ## 1. 채팅방 생성
-  def create_room(%{room_type: room_type, name: name}) do
+  def create_room(%{room_type: room_type, name: name, ddb_id: ddb_id}) do
     %TalkRoom{}
-    |> TalkRoom.changeset(%{room_type: room_type, name: name})
+    |> TalkRoom.changeset(%{room_type: room_type, name: name, ddb_id: ddb_id})
     |> Repo.insert()
   end
 
@@ -65,6 +65,10 @@ defmodule Rambo.TalkRoomService do
     end
   end
 
+  def list_rooms do
+    Repo.all(TalkRoom)
+  end
+
   def get_last_read_key(room_id, user_id) do
     from(u in TalkRoomUser,
       where: u.talk_room_id == ^room_id and u.user_id == ^user_id,
@@ -101,6 +105,13 @@ defmodule Rambo.TalkRoomService do
         unread_count: unread_count
       }
     end)
+  end
+
+  def get_room_by_id(room_id) do
+    case Repo.get(TalkRoom, room_id) do
+      nil -> {:error, "Room not found"}
+      room -> {:ok, room}
+    end
   end
 
 end

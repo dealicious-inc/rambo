@@ -42,10 +42,10 @@ aws dynamodb create-table \
 aws dynamodb create-table \
 --table-name talk_messages \
 --attribute-definitions \
-AttributeName=room_id,AttributeType=N \
+AttributeName=id,AttributeType=S \
 AttributeName=message_id,AttributeType=S \
 --key-schema \
-AttributeName=room_id,KeyType=HASH \
+AttributeName=id,KeyType=HASH \
 AttributeName=message_id,KeyType=RANGE \
 --billing-mode PAY_PER_REQUEST \
 --endpoint-url http://localhost:8000 \

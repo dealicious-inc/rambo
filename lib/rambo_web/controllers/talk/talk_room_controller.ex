@@ -3,11 +3,23 @@ defmodule RamboWeb.Api.TalkRoomController do
 
   alias Rambo.TalkRoomService
 
+  # 채팅방 목록 조회
+  def index(conn, _params) do
+    rooms = TalkRoomService.list_rooms()
+
+    json(conn, rooms)
+  end
+
   # 채팅방 생성
-  def create(conn, %{"name" => name, "room_type" => room_type}) do
-    case TalkRoomService.create_room(%{room_type: room_type, name: name}) do
+  def create(conn, %{"name" => name, "room_type" => room_type, "user_id" => user_id}) do
+    # ddb_id 생성: room_type#user_id#timestamp 형식
+    ddb_id = "#{room_type}##{user_id}##{System.system_time(:second)}"
+
+    # 채팅방 생성
+    case TalkRoomService.create_room(%{room_type: room_type, name: name, ddb_id: ddb_id}) do
       {:ok, room} ->
-        json(conn, %{room_id: room.id, name: room.name})
+        json(conn, %{room_id: room.id, name: room.name, ddb_id: room.ddb_id})
+
       {:error, changeset} ->
         conn |> put_status(:unprocessable_entity) |> json(%{errors: changeset_errors(changeset)})
     end
@@ -39,10 +51,14 @@ defmodule RamboWeb.Api.TalkRoomController do
   def send_message(conn, %{"id" => room_id, "sender_id" => sender_id, "message" => message}) do
     with {rid, _} <- Integer.parse(room_id),
          sid when is_integer(sid) <- sender_id,
+         {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(rid),
+
          {:ok, item} <- Rambo.Talk.MessageStore.store_message(%{
            room_id: "#{rid}",
            sender_id: sid,
-           message: message
+           message: message,
+           name: room.name,
+           ddb_id: room.ddb_id
          }),
          :ok <- Rambo.Nats.JetStream.publish("talk.room.#{rid}", Jason.encode!(item)) do
       json(conn, %{result: "stored", item: item})
