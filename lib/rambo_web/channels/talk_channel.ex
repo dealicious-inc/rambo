@@ -68,18 +68,6 @@ defmodule RamboWeb.TalkChannel do
     room_id = socket.assigns.room_id
     user_id = socket.assigns.user_id
 
-    case MessageService.mark_as_read(room_id, user_id, message_id) do
-      {_count, _} ->
-        broadcast_from!(socket, "message_read", %{
-          user_id: user_id,
-          message_id: message_id
-        })
 
-        {:noreply, socket}
-
-      _ ->
-        push(socket, "error", %{reason: "Failed to update read message"})
-        {:noreply, socket}
-    end
   end
 end

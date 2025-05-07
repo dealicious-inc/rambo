@@ -34,4 +34,13 @@ defmodule Rambo.Nats do
         listen_loop()
     end
   end
+
+  def subscribe_and_listen(pid, room) do
+    topic = @topic_prefix <> room
+    IO.inspect({:subscribe_and_listen, pid, topic}, label: "Rambo.Nats")
+
+    # 이 pid (RoomSubscriber)로 메시지가 가게 설정
+    Gnat.sub(:gnat, pid, topic)
+  end
+
 end

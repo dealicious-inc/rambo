@@ -14,6 +14,7 @@ defmodule RamboWeb.Api.RoomController do
 
     case Rambo.Repo.insert(changeset) do
       {:ok, room} ->
+        DynamicSupervisor.start_child(Rambo.Nats.RoomSupervisor, {Rambo.Nats.RoomSubscriber, room.id})
         json(conn, %{id: room.id, name: room.name, message: "Room created"})
       {:error, changeset} ->
         conn

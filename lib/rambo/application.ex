@@ -26,7 +26,8 @@ defmodule Rambo.Application do
         id: :nats_subscriber,
         start: {Rambo.Nats.Starter, :start_link, [[]]}
       },
-#      Rambo.Talk.RoomManager.subscribe_all_rooms(),
+      {Registry, keys: :unique, name: Rambo.Nats.RoomRegistry},
+      {DynamicSupervisor, strategy: :one_for_one, name: Rambo.Nats.RoomSupervisor},
       {Phoenix.PubSub, name: Rambo.PubSub}
     ]
 
