@@ -25,10 +25,9 @@ defmodule Rambo.Nats.RoomSubscriber do
 
   def handle_info({:msg, %{topic: full_topic, body: body}}, state) do
     case Jason.decode(body) do
-      {:ok, %{"message" => msg, "user" => user} = payload} ->
+      {:ok, %{"message" => _msg, "user" => _user} = payload} ->
         IO.inspect({:received, full_topic, payload}, label: "RoomSubscriber")
 
-        # broadcast 추가!
         room = state.room_id |> to_string()
         RamboWeb.Endpoint.broadcast("room:" <> room, "new_msg", payload)
 
