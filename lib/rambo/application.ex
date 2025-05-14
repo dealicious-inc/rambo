@@ -23,10 +23,12 @@ defmodule Rambo.Application do
         shutdown: 500
       },
       %{
-          id: :nats_subscriber,
-          start: {Rambo.Nats.Starter, :start_link, [[]]}
-       },
-      {Phoenix.PubSub, name: Rambo.PubSub},
+        id: :nats_subscriber,
+        start: {Rambo.Nats.Starter, :start_link, [[]]}
+      },
+      {Registry, keys: :unique, name: Rambo.Nats.RoomRegistry},
+      {DynamicSupervisor, strategy: :one_for_one, name: Rambo.Nats.RoomSupervisor},
+      {Phoenix.PubSub, name: Rambo.PubSub}
     ]
 
     opts = [strategy: :one_for_one, name: Rambo.Supervisor]
@@ -39,4 +41,3 @@ defmodule Rambo.Application do
     :ok
   end
 end
-

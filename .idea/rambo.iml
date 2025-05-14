@@ -68,6 +68,7 @@
       <excludeFolder url="file://$MODULE_DIR$/_build/dev/lib/timex" />
       <excludeFolder url="file://$MODULE_DIR$/_build/dev/lib/tzdata" />
       <excludeFolder url="file://$MODULE_DIR$/_build/dev/lib/unicode_util_compat" />
+      <excludeFolder url="file://$MODULE_DIR$/_build/dev/lib/jetstream" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -172,5 +173,7 @@
     <orderEntry type="library" name="tzdata" level="project" />
     <orderEntry type="library" name="timex" level="project" />
     <orderEntry type="library" name="combine" level="project" />
+    <orderEntry type="library" name="jetstream" level="project" />
+    <orderEntry type="library" name="broadway" level="project" />
   </component>
 </module>

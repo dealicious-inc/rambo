@@ -23,3 +23,32 @@ mix ecto.migrate
 mix deps.get
 ```
 
+## local ddb 설정
+```angular2html
+aws dynamodb create-table \
+--endpoint-url http://localhost:8000 \
+--table-name messages \
+--attribute-definitions \
+AttributeName=id,AttributeType=S \
+AttributeName=message_id,AttributeType=S \
+--key-schema \
+AttributeName=id,KeyType=HASH \
+AttributeName=message_id,KeyType=RANGE \
+--billing-mode PAY_PER_REQUEST \
+--region ap-northeast-2
+```
+
+```angular2html
+aws dynamodb create-table \
+--table-name talk_messages \
+--attribute-definitions \
+AttributeName=id,AttributeType=S \
+AttributeName=message_id,AttributeType=S \
+--key-schema \
+AttributeName=id,KeyType=HASH \
+AttributeName=message_id,KeyType=RANGE \
+--billing-mode PAY_PER_REQUEST \
+--endpoint-url http://localhost:8000 \
+--region ap-northeast-2
+```
+
