@@ -4,6 +4,7 @@ defmodule Rambo.Talk.MessageStore do
   @table "talk_messages"
 
   require Logger
+  alias Rambo.Repo
 
   def store_message(attrs) do
     message_id = "MSG##{System.system_time(:millisecond)}"
@@ -45,56 +46,60 @@ defmodule Rambo.Talk.MessageStore do
        end
   end
 
-  def get_messages(room_id, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 20)
-    last_seen_key = Keyword.get(opts, :last_seen_key)
+def get_messages(room_id, opts \\ []) do
+  # 먼저 ddb_id 조회
+  case get_ddb_id_from_sql(room_id) do
+    nil ->
+      {:error, :room_not_found}
 
-    rid_str = to_string(room_id)
+    ddb_id ->
+      limit = Keyword.get(opts, :limit, 20)
+      last_seen_key = Keyword.get(opts, :last_seen_key)
 
-    base_opts = [
-      key_condition_expression: "room_id = :rid",
-      expression_attribute_values: %{
-        :rid => %{"N" => rid_str}
-      },
-      scan_index_forward: false,
-      limit: limit
-    ]
+      query_opts =
+        [
+          key_condition_expression: "id = :id",
+          expression_attribute_values: %{
+            "id" => %{"S" => ddb_id}
+          },
+          scan_index_forward: false,
+          limit: limit
+        ] ++
+          if last_seen_key do
+            [
+              exclusive_start_key: %{
+                "id" => %{"S" => ddb_id},
+                "message_id" => %{"S" => last_seen_key}
+              }
+            ]
+          else
+            []
+          end
 
-    full_opts =
-      if last_seen_key do
-        base_opts ++ [
-          exclusive_start_key: %{
-            "room_id" => %{"N" => rid_str},
-            "message_id" => %{"S" => last_seen_key}
-          }
-        ]
-      else
-        base_opts
+      ExAws.Dynamo.query("talk_messages", query_opts)
+      |> ExAws.request()
+      |> case do
+        {:ok, %{"Items" => items}} ->
+          parsed =
+            Enum.map(items, fn item ->
+              %{
+                room_id: item["id"]["S"],
+                sender_id: item["sender_id"]["N"] |> String.to_integer(),
+                message_id: item["message_id"]["S"],
+                message: item["message"]["S"],
+                message_type: item["message_type"]["S"],
+                sent_at: item["sent_at"]["S"]
+              }
+            end)
+
+          {:ok, parsed}
+
+        error ->
+          IO.inspect(error, label: "🚨 에러")
+          error
       end
-
-    ExAws.Dynamo.query("talk_messages", full_opts)
-    |> ExAws.request()
-    |> case do
-         {:ok, %{"Items" => items}} ->
-           parsed =
-             Enum.map(items, fn item ->
-               %{
-                 room_id: item["room_id"]["N"] |> String.to_integer(),
-                 sender_id: item["sender_id"]["N"] |> String.to_integer(),
-                 message_id: item["message_id"]["S"],
-                 message: item["message"]["S"],
-                 message_type: item["message_type"]["S"],
-                 sent_at: item["sent_at"]["S"]
-               }
-             end)
-
-           {:ok, parsed}
-
-         error ->
-           IO.inspect(error, label: "🚨 에러")
-           error
-       end
   end
+end
 
   def count_messages_after(room_id, last_read_key) do
     ExAws.Dynamo.query("talk_messages",
@@ -125,6 +130,13 @@ defmodule Rambo.Talk.MessageStore do
          {:ok, %{"Count" => count}} -> {:ok, count}
          error -> error
        end
+  end
+
+  defp get_ddb_id_from_sql(room_id) do
+    case Repo.get(Rambo.TalkRoom, room_id) do
+      nil -> nil
+      room -> room.ddb_id
+    end
   end
 
 end
