@@ -23,7 +23,7 @@ mix ecto.migrate
 mix deps.get
 ```
 
-## ddb 
+## local ddb 설정
 ```angular2html
 aws dynamodb create-table \
 --endpoint-url http://localhost:8000 \
@@ -51,3 +51,4 @@ AttributeName=message_id,KeyType=RANGE \
 --endpoint-url http://localhost:8000 \
 --region ap-northeast-2
 ```
+

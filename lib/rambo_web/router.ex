@@ -19,6 +19,7 @@ defmodule RamboWeb.Router do
 
     get "/", PageController, :home
     get "/chat", ChatController, :index
+    get "/rooms", ChatController, :rooms
   end
 
   scope "/api", RamboWeb.Api do
@@ -30,6 +31,15 @@ defmodule RamboWeb.Router do
 
     get "/users", UserController, :index
     post "/users", UserController, :create
+
+    get "/talk_rooms", TalkRoomController, :index
+    post "/talk_rooms", TalkRoomController, :create
+    post "/talk_rooms/private", TalkRoomController, :private
+    post "/talk_rooms/:id/join", TalkRoomController, :join
+    get "/talk_rooms", TalkRoomController, :list
+    post "/talk_rooms/:id/messages", TalkRoomController, :send_message
+    get "/talk_rooms/:id/messages", TalkRoomController, :messages
+    post "/talk_rooms/:id/mark_as_read", TalkRoomController, :mark_as_read
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

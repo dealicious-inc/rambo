@@ -52,7 +52,8 @@ defmodule Rambo.MixProject do
       {:ex_aws_dynamo, "~> 4.0"},
       {:elixir_uuid, "~> 1.2"},
       {:tzdata, "~> 1.1"},
-      {:timex, "~> 3.7"}
+      {:timex, "~> 3.7"},
+      {:jetstream, "~> 0.0.9"}
     ]
   end
 
