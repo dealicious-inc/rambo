@@ -81,7 +81,7 @@ defmodule Rambo.TalkRoomService do
        end
   end
 
-  def list_user_rooms_with_unread(user_id) do
+  def participate_list(user_id) do
     # 유저가 참여한 채팅방 목록
     query =
       from r in TalkRoom,
@@ -99,7 +99,7 @@ defmodule Rambo.TalkRoomService do
         end
 
       %{
-        room_id: room.id,
+        id: room.id,
         name: room.name,
         room_type: room.room_type,
         unread_count: unread_count

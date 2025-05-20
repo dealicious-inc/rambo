@@ -47,8 +47,7 @@ defmodule Rambo.Talk.MessageStore do
   end
 
 def get_messages(room_id, opts \\ []) do
-  # 먼저 ddb_id 조회
-  case get_ddb_id_from_sql(room_id) do
+    case get_ddb_id_from_sql(room_id) do
     nil ->
       {:error, :room_not_found}
 

@@ -20,8 +20,9 @@ defmodule Rambo.TalkRoom do
   end
 
   defimpl Jason.Encoder do
-    def encode(%Rambo.TalkRoom{room_type: room_type, name: name, inserted_at: inserted_at, updated_at: updated_at}, opts) do
+    def encode(%Rambo.TalkRoom{id: id, room_type: room_type, name: name, inserted_at: inserted_at, updated_at: updated_at}, opts) do
       Jason.Encode.map(%{
+        id: id,
         room_type: room_type,
         name: name,
         inserted_at: inserted_at,

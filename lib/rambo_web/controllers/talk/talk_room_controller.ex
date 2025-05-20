@@ -40,10 +40,10 @@ defmodule RamboWeb.Api.TalkRoomController do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
   end
 
-  def list(conn, %{"user_id" => user_id_str}) do
+  def participate_list(conn, %{"user_id" => user_id_str}) do
     {user_id, _} = Integer.parse(user_id_str)
 
-    rooms = Rambo.TalkRoomService.list_user_rooms_with_unread(user_id)
+    rooms = Rambo.TalkRoomService.participate_list(user_id)
 
     json(conn, rooms)
   end
