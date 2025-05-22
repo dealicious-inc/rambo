@@ -56,21 +56,28 @@ AttributeName=message_id,KeyType=RANGE \
 ### 1. locust 설치
 ```
 # 프로젝트 디렉토리로 이동
-cd ~/Documents/GitHub/rambo  # 프로젝트 디렉토리로 이동
+cd ~/Documents/GitHub/rambo
+
 # 가상환경 생성
 python3 -m venv venv
+
 # 가상환경 활성화
 source venv/bin/activate
+
 # pip 업그레이드
 pip3 install --upgrade pip
+
 # locust 설치
 pip3 install locust
+
 # locust가 설치된 경로 확인
 which locust
+
 # 버전 확인
 locust -V
-# locust
-locust 실행
+
+# locust 실행
+locust
 ```
 ### 2. 테스트하기
 1. locust 실행 시 웹 브라우저로 이동 후 접속됩니다.
