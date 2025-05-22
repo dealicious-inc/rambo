@@ -52,3 +52,35 @@ AttributeName=message_id,KeyType=RANGE \
 --region ap-northeast-2
 ```
 
+## 부하 테스트
+### 1. locust 설치
+```
+# 프로젝트 디렉토리로 이동
+cd ~/Documents/GitHub/rambo  # 프로젝트 디렉토리로 이동
+# 가상환경 생성
+python3 -m venv venv
+# 가상환경 활성화
+source venv/bin/activate
+# pip 업그레이드
+pip3 install --upgrade pip
+# locust 설치
+pip3 install locust
+# locust가 설치된 경로 확인
+which locust
+# 버전 확인
+locust -V
+# locust
+locust 실행
+```
+### 2. 테스트하기
+1. locust 실행 시 웹 브라우저로 이동 후 접속됩니다.
+- http://localhost:8089 접속하여 [NEW] 버튼 클릭
+![image.png](image.png)
+- 각 필드 설명
+    - Number of users: 시뮬레이션할 사용자 수
+    - Ramp up: 초당 생성할 사용자 수
+    - Host: 테스트할 서버 주소
+2. 이제 웹 인터페이스에서 [START] 버튼을 클릭하면 부하 테스트가 시작됩니다.
+- host 값은 실제 테스트하려는 서버의 URL로 변경해야 합니다.
+- Flask 애플리케이션이 실행 중이어야 합니다.
+- 테스트하려는 엔드포인트에 맞게 task들을 수정하면 됩니다.
