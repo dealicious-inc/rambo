@@ -39,7 +39,7 @@ defmodule RamboWeb.Router do
     get "/talk_rooms/participate-list", TalkRoomController, :participate_list
     post "/talk_rooms/:id/messages", TalkRoomController, :send_message
     get "/talk_rooms/:id/messages", TalkRoomController, :messages
-    post "/talk_rooms/:id/mark_as_read", TalkRoomController, :mark_as_read
+    post "/talk_rooms/:id/mark_read", TalkRoomController, :mark_read
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

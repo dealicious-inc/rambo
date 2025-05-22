@@ -89,4 +89,20 @@ defmodule RamboWeb.Api.TalkRoomController do
     end
   end
 
+  def mark_read(conn, %{
+    "id" => room_id,
+    "userid" => user_id,
+    "last_read_key" => last_read_key
+  }) do
+    with {rid, _} <- Integer.parse(room_id),
+         uid <- parse_int(user_id),
+         {count, _} <- TalkRoomService.mark_as_read(rid, uid, last_read_key) do
+      json(conn, %{updated: count})
+    else
+      _ -> conn |> put_status(:bad_request) |> json(%{error: "Failed to mark as read"})
+    end
+  end
+
+  defp parse_int(val) when is_integer(val), do: val
+  defp parse_int(val) when is_binary(val), do: String.to_integer(val)
 end

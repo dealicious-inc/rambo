@@ -101,14 +101,25 @@ def get_messages(room_id, opts \\ []) do
 end
 
   def count_messages_after(room_id, last_read_key) do
-    ExAws.Dynamo.query("talk_messages",
-      key_condition_expression: "room_id = :rid AND message_id > :mid",
-      expression_attribute_values: %{
-        :rid => %{"N" => to_string(room_id)},
-        :mid => %{"N" => to_string(last_read_key)}
-      },
-      select: "COUNT"
-    )
+    opts =
+      if is_nil(last_read_key) or last_read_key == "" do
+        [
+          key_condition_expression: "id = :rid",
+          expression_attribute_values: [rid: %{"S" => room_id}],
+          select: "COUNT"
+        ]
+      else
+        [
+          key_condition_expression: "id = :rid AND message_id > :mid",
+          expression_attribute_values: [
+            rid: %{"S" => room_id},
+            mid: %{"S" => last_read_key}
+          ],
+          select: "COUNT"
+        ]
+      end
+
+    ExAws.Dynamo.query("talk_messages", opts)
     |> ExAws.request()
     |> case do
          {:ok, %{"Count" => count}} -> {:ok, count}
