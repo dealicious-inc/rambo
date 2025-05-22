@@ -1,10 +1,4 @@
 defmodule Rambo.Nats.JetStream do
-#  @gnat_name :rambo_jetstream
-#
-#  def connect(opts \\ []) do
-#    config = Keyword.merge([host: '127.0.0.1', port: 4222, name: @gnat_name], opts)
-#    Gnat.start_link(config)
-#  end
 
   def publish(subject, payload) when is_binary(payload) do
     Gnat.pub(:gnat, subject, payload)
@@ -18,6 +12,10 @@ defmodule Rambo.Nats.JetStream do
     end)
 
     :ok
+  end
+
+  def subscribe(subject, pid) when is_pid(pid) do
+    Gnat.sub(:gnat, pid, subject)
   end
 
   defp listen_loop(callback_fn) do

@@ -102,7 +102,8 @@ defmodule Rambo.TalkRoomService do
         id: room.id,
         name: room.name,
         room_type: room.room_type,
-        unread_count: unread_count
+        unread_count: unread_count,
+        last_read_message_key: last_read_key
       }
     end)
   end

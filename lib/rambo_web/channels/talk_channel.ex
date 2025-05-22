@@ -64,11 +64,4 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
-  # todo: 작업예정
-#  def handle_in("read_msg", %{"message_id" => message_id}, socket) do
-#    room_id = socket.assigns.room_id
-#    user_id = socket.assigns.user_id
-#
-#
-#  end
 end
