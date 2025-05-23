@@ -2,7 +2,6 @@ defmodule RamboWeb.UserLobbyChannel do
   use Phoenix.Channel
 
   alias Rambo.TalkRoomService
-  alias Rambo.Talk.MessageStore
 
   def join("user_lobby:" <> user_id_str, _params, socket) do
     case Integer.parse(user_id_str) do
