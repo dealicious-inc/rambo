@@ -8,4 +8,8 @@ defmodule RamboWeb.ChatController do
   def rooms(conn, _params) do
     render(conn, "room.html")
   end
+
+  def lobby(conn, _params) do
+    render(conn, "lobby.html")
+  end
 end

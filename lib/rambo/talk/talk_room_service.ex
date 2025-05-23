@@ -93,7 +93,7 @@ defmodule Rambo.TalkRoomService do
     Repo.all(query)
     |> Enum.map(fn {room, last_read_key} ->
       unread_count =
-        case Rambo.Talk.MessageStore.count_messages_after("#{room.id}", last_read_key) do
+        case Rambo.Talk.MessageStore.count_messages_after("#{room.ddb_id}", last_read_key) do
           {:ok, count} -> count
           _ -> 0
         end
@@ -102,7 +102,8 @@ defmodule Rambo.TalkRoomService do
         id: room.id,
         name: room.name,
         room_type: room.room_type,
-        unread_count: unread_count
+        unread_count: unread_count,
+        last_read_message_key: last_read_key
       }
     end)
   end

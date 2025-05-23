@@ -7,6 +7,9 @@ defmodule RamboWeb.UserSocket do
   # JetStream 기반 1:1/다대다 채팅방
   channel "talk:*", RamboWeb.TalkChannel
 
+  # 로비
+  channel "user_lobby:*", RamboWeb.UserLobbyChannel
+
   def connect(_params, socket, _connect_info) do
     {:ok, socket}
   end
