@@ -2,7 +2,12 @@ import { Socket } from "phoenix"
 
 // lobby.js (프론트에서 참여 중인 채팅방 목록 + 채팅방 입장)
 document.addEventListener("DOMContentLoaded", () => {
-    const userId = 1; // 유저 ID는 실제 로그인 정보에서 가져오도록 할 수 있음
+    const params = new URLSearchParams(window.location.search);
+    const userId = parseInt(params.get("userId"));
+    if (!userId) {
+        alert("❗ URL에 userId 쿼리 파라미터가 필요합니다. 예: /lobby?userId=1");
+        return;
+    }
     const socket = new Socket("/socket", { params: { user_id: userId } });
     socket.connect();
 
