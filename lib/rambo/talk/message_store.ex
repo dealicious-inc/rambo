@@ -104,31 +104,38 @@ defmodule Rambo.Talk.MessageStore do
     end
   end
 
-  def count_messages_after(room_id, last_read_key) do
+  def count_messages_after(room_id, last_read_key, user_id) do
+    base_expr_values = %{
+      rid: %{"S" => room_id},
+      me: %{"N" => to_string(user_id)}
+    }
+
     opts =
-      if is_nil(last_read_key) or last_read_key == "" do
-        [
-          key_condition_expression: "id = :rid",
-          expression_attribute_values: [rid: %{"S" => room_id}],
-          select: "COUNT"
-        ]
-      else
-        [
-          key_condition_expression: "id = :rid AND message_id > :mid",
-          expression_attribute_values: [
-            rid: %{"S" => room_id},
-            mid: %{"S" => last_read_key}
-          ],
-          select: "COUNT"
-        ]
+      cond do
+        is_nil(last_read_key) or last_read_key == "" ->
+          [
+            key_condition_expression: "id = :rid",
+            filter_expression: "sender_id <> :me",
+            expression_attribute_values: base_expr_values,
+            select: "COUNT"
+          ]
+
+        true ->
+          [
+            key_condition_expression: "id = :rid AND message_id > :mid",
+            filter_expression: "sender_id <> :me",
+            expression_attribute_values:
+              Map.merge(base_expr_values, %{mid: %{"S" => last_read_key}}),
+            select: "COUNT"
+          ]
       end
 
     ExAws.Dynamo.query("talk_messages", opts)
     |> ExAws.request()
     |> case do
-      {:ok, %{"Count" => count}} -> {:ok, count}
-      error -> error
-    end
+         {:ok, %{"Count" => count}} -> {:ok, count}
+         error -> error
+       end
   end
 
   def count_all_messages(room_id) do
