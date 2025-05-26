@@ -7,9 +7,18 @@ defmodule RamboWeb.UserLobbyChannel do
     case Integer.parse(user_id_str) do
       {user_id, _} ->
         socket = assign(socket, :user_id, user_id)
+        # ✅ 유저 개인 NATS 채널 구독 (예: 초대받은 경우 실시간 반영)
+        Rambo.Nats.JetStream.subscribe("talk.user.#{user_id}", fn _msg ->
+          send(self(), :after_join)
+        end)
 
-        Rambo.Nats.JetStream.subscribe("talk.room.*", self())
-        send(self(), :after_join)
+        # ✅ 현재 유저가 참여 중인 채팅방을 구독 → 초대 등 이벤트를 실시간으로 받기 위함
+        rooms = TalkRoomService.participate_list(user_id)
+        Enum.each(rooms, fn room ->
+          Rambo.Talk.Subscriber.subscribe_room_for_lobby(room.id, self())
+        end)
+
+        send(self(), :after_join)  # 기존 방 목록 push
         {:ok, socket}
 
       :error ->
@@ -36,17 +45,29 @@ defmodule RamboWeb.UserLobbyChannel do
     {:noreply, socket}
   end
 
-  # JetStream 메시지를 수신했을 때 방 목록을 다시 push
+  # 메시지를 수신했을 때 방 목록을 다시 push
   def handle_info({:msg, %{body: body}}, socket) do
     case Jason.decode(body) do
       {:ok, %{"id" => _room_ddb_id}} ->
         IO.puts("📩 NATS message received → refreshing room list")
-        send(self(), :after_join) # 방 목록 다시 push해서 안읽음 카운트 최신화
+        send(self(), :after_join)
+
+      {:ok, %{"type" => "invitation", "room_id" => _, "to_user_id" => user_id}} ->
+        if socket.assigns.user_id == user_id do
+          IO.puts("📨 초대 메시지 수신 → 방 목록 갱신")
+          send(self(), :after_join)
+        end
 
       _ ->
         IO.puts("❌ Invalid or malformed NATS body: #{inspect(body)}")
     end
 
+    {:noreply, socket}
+  end
+
+  def handle_info({:refresh_room_list}, socket) do
+    IO.puts("🔄 refresh_room_list received")
+    send(self(), :after_join)
     {:noreply, socket}
   end
 

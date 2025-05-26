@@ -31,8 +31,17 @@ defmodule RamboWeb.Api.TalkRoomController do
     uid = if is_binary(user_id), do: String.to_integer(user_id), else: user_id
 
     case TalkRoomService.join_user(rid, uid) do
-      {:ok, _} -> json(conn, %{message: "joined"})
-      _ -> conn |> put_status(:bad_request) |> json(%{error: "Join failed"})
+      {:ok, _} ->
+        # ✅ 초대된 유저 개인 채널로 NATS 메시지 발행 → 로비에서 수신
+        payload = %{type: "invitation", room_id: rid, to_user_id: uid}
+        Rambo.Nats.JetStream.publish("talk.user.#{uid}", Jason.encode!(payload))
+
+        json(conn, %{message: "joined"})
+
+      _ ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: "Join failed"})
     end
   end
 
