@@ -22,7 +22,7 @@ defmodule Rambo.Talk.Subscriber do
   def subscribe_room_for_lobby(room_id, pid) do
     subject = "talk.room.#{room_id}"
 
-    JetStream.subscribe(subject, fn msg ->
+    JetStream.subscribe(subject, fn _msg ->
       send(pid, {:refresh_room_list})
     end)
   end

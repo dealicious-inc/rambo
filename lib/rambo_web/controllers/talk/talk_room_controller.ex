@@ -35,6 +35,7 @@ defmodule RamboWeb.Api.TalkRoomController do
         # ✅ 초대된 유저 개인 채널로 NATS 메시지 발행 → 로비에서 수신
         payload = %{type: "invitation", room_id: rid, to_user_id: uid}
         Rambo.Nats.JetStream.publish("talk.user.#{uid}", Jason.encode!(payload))
+        TalkRoomService.touch_activity(rid)
 
         json(conn, %{message: "joined"})
 

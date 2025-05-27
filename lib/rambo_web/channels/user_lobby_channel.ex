@@ -32,6 +32,7 @@ defmodule RamboWeb.UserLobbyChannel do
 
     rooms =
       TalkRoomService.participate_list(user_id)
+      |> Enum.sort_by(& &1.last_activity_at || DateTime.from_unix!(0), {:desc, DateTime})
       |> Enum.map(fn room ->
         %{
           id: room.id,

@@ -103,7 +103,8 @@ defmodule Rambo.TalkRoomService do
         name: room.name,
         room_type: room.room_type,
         unread_count: unread_count,
-        last_read_message_key: last_read_key
+        last_read_message_key: last_read_key,
+        last_activity_at: room.last_activity_at
       }
     end)
   end
@@ -120,5 +121,13 @@ defmodule Rambo.TalkRoomService do
       {:ok, [latest | _]} -> {:ok, latest.message_id}
       _ -> {:ok, nil}
     end
+  end
+
+  def touch_activity(room_id) do
+    {_, _} =
+      from(r in TalkRoom, where: r.id == ^room_id)
+      |> Repo.update_all(set: [last_activity_at: DateTime.utc_now()])
+
+    :ok
   end
 end

@@ -36,15 +36,29 @@ defmodule RamboWeb.TalkChannel do
            name: room.name,
            ddb_id: room.ddb_id
          }),
-         :ok <- Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
+         :ok <- TalkRoomService.touch_activity(room_id) do
 
-      {:noreply, socket}
+      case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
+        :ok ->
+          {:noreply, socket}
+
+        err ->
+          IO.inspect(err, label: "❌ Failed to publish to NATS")
+          push(socket, "error", %{error: "Message stored but publish failed"})
+          {:noreply, socket}
+      end
     else
       error ->
-        IO.inspect(error, label: "❌ Failed to store/publish message")
+        IO.inspect(error, label: "❌ Failed to store message or update activity")
         push(socket, "error", %{error: "Message sending failed"})
         {:noreply, socket}
     end
+  end
+
+  # 읽음처리
+  def handle_in("mark_read", %{"last_read_key" => key}, socket) do
+    TalkRoomService.mark_as_read(socket.assigns.room_id, socket.assigns.user_id, key)
+    {:noreply, socket}
   end
 
   # 채팅방 진입 시 메시지 가져올 때
@@ -83,9 +97,4 @@ defmodule RamboWeb.TalkChannel do
     {:noreply, socket}
   end
 
-  # 읽음처리
-  def handle_in("mark_read", %{"last_read_key" => key}, socket) do
-    TalkRoomService.mark_as_read(socket.assigns.room_id, socket.assigns.user_id, key)
-    {:noreply, socket}
-  end
 end
