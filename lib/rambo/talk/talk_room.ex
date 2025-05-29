@@ -6,7 +6,7 @@ defmodule Rambo.TalkRoom do
     field :room_type, :string
     field :name, :string
     field :ddb_id, :string
-
+    field :last_activity_at, :utc_datetime
     has_many :talk_room_users, Rambo.TalkRoomUser
 
     timestamps()

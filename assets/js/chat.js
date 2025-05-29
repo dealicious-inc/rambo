@@ -61,9 +61,21 @@ document.addEventListener("DOMContentLoaded", () => {
     sendButton.addEventListener("click", sendMessage)
 
     // 엔터 입력 시 전송
+    let isComposing = false;
+
+    input.addEventListener("compositionstart", () => {
+        isComposing = true;
+    });
+
+    input.addEventListener("compositionend", () => {
+        isComposing = false;
+        sendMessage();
+    });
+
     input.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            sendMessage()
+        if (event.key === "Enter" && !isComposing) {
+            event.preventDefault();
+            sendMessage();
         }
-    })
+    });
 })
