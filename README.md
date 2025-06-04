@@ -23,6 +23,11 @@ mix ecto.migrate
 mix deps.get
 ```
 
+### Elixir REPL 환경 안에서 프로젝트 코드를 확인하고 함수 테스트가 가능
+```shell
+iex -S mix
+```
+
 ## local ddb 설정
 ```angular2html
 aws dynamodb create-table \

@@ -32,7 +32,7 @@ services:
     container_name: rambo-redis
     hostname: redis
     image: redis:latest
-    command: redis-server
+    command: redis-server --notify-keyspace-events Ex
     labels:
       - "name=redis"
       - "mode=standalone"
