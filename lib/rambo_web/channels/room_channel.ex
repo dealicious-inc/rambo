@@ -6,6 +6,7 @@
       {:ok, socket}
     end
 
+    # 클라이언트 → 서버로 push한 이벤트 처리
     def handle_in("new_msg", %{"id" => room_id, "user" => user_id, "message" => content}, socket) do
       timestamp = DateTime.now!("Asia/Seoul") |> DateTime.truncate(:second)
       created_at = DateTime.to_iso8601(timestamp)
