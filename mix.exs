@@ -54,7 +54,8 @@ defmodule Rambo.MixProject do
       {:tzdata, "~> 1.1"},
       {:timex, "~> 3.7"},
       {:jetstream, "~> 0.0.9"},
-      {:redix, "~> 1.3"}
+      {:redix, "~> 1.5"},
+      {:uuid, "~> 1.1"}
     ]
   end
 

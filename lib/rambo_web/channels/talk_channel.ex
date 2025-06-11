@@ -4,6 +4,8 @@ defmodule RamboWeb.TalkChannel do
   alias Rambo.TalkRoomService
   alias Rambo.Talk.Subscriber
 
+  require Logger
+
   def join("talk:" <> room_id_str, %{"user_id" => user_id_str}, socket) do
     with {room_id, _} <- Integer.parse(room_id_str),
          user_id = String.to_integer("#{user_id_str}"),
@@ -27,14 +29,15 @@ defmodule RamboWeb.TalkChannel do
 
   def handle_in("new_msg", %{"user" => user_id, "message" => message}, socket) do
     room_id = socket.assigns.room_id
+    timestamp = System.system_time(:millisecond)
 
+    Logger.info("톡채널")
     with {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(room_id),
          {:ok, item} <- Rambo.Talk.MessageStore.store_message(%{
-           room_id: "#{room_id}",
+           room_id: room_id,
+           timestamp: timestamp,
            sender_id: user_id,
-           message: message,
-           name: room.name,
-           ddb_id: room.ddb_id
+           content: message,
          }),
          :ok <- TalkRoomService.touch_activity(room_id) do
 

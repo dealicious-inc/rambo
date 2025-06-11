@@ -3,8 +3,18 @@ defmodule Rambo.RedisClient do
   Redis 클라이언트 모듈
   """
 
+  require Logger
+
   def set(key, value) when is_binary(key) do
-    Redix.command(Rambo.Redis, ["SET", key, value])
+    Logger.debug("Redis SET 시도: key=#{key}, value=#{inspect(value)}")
+    case Redix.command(Rambo.Redis, ["SET", key, to_string(value)]) do
+      {:ok, "OK"} ->
+        IO.puts("Redis SET 성공")
+        :ok
+      error ->
+        Logger.error("Redis SET 실패: #{inspect(error)}")
+        error
+    end
   end
 
   def get(key) when is_binary(key) do
@@ -29,6 +39,10 @@ defmodule Rambo.RedisClient do
 
   def expire(key, seconds) when is_binary(key) and is_integer(seconds) and seconds > 0 do
     Redix.command(Rambo.Redis, ["EXPIRE", key, to_string(seconds)])
+  end
+
+  def incr(key) when is_binary(key) do
+    Redix.command(Rambo.Redis, ["INCR", key])
   end
 
   # Redis hash table 관련 함수들

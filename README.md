@@ -57,6 +57,34 @@ AttributeName=message_id,KeyType=RANGE \
 --region ap-northeast-2
 ```
 
+
+-- 테이블 설계 변경필요 논의사항
+```shell
+aws dynamodb create-table \
+--endpoint-url http://localhost:8000 \
+--table-name messages \
+--attribute-definitions \
+  AttributeName=pk,AttributeType=S \
+  AttributeName=sk,AttributeType=S \
+  AttributeName=message_id,AttributeType=S \
+--key-schema \
+  AttributeName=pk,KeyType=HASH \
+  AttributeName=sk,KeyType=RANGE \
+--billing-mode PAY_PER_REQUEST \
+--global-secondary-indexes '[
+  {
+    "IndexName": "message_id_gsi",
+    "KeySchema": [
+      { "AttributeName": "message_id", "KeyType": "HASH" }
+    ],
+    "Projection": {
+      "ProjectionType": "ALL"
+    }
+  }
+]' \
+--region ap-northeast-2
+```
+
 ## 부하 테스트
 ### 1. locust 설치
 ```
