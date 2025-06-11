@@ -39,7 +39,7 @@ defmodule Rambo.Redis.ExpiryHandler do
       case RedisMessageStore.get_last_message(room_id) do
         {:ok, message} ->
           Logger.info("메시지 만료 처리: room_id=#{room_id}, message=#{message}")
-          # TODO: RDB에 저장하는 로직 추가
+          # @TODO RDB에 저장하는 로직 추가
 
         {:error, :not_found} ->
           Logger.warn("만료된 메시지를 찾을 수 없음: room_id=#{room_id}")

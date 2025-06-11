@@ -44,18 +44,19 @@ document.addEventListener("DOMContentLoaded", () => {
             .receive("error", () => console.error("❌ 채팅방 입장 실패"));
 
         talkChannel.on("messages", payload => {
+            console.log(`"Asdad" ${payload.messages}`);
             const msgContainer = document.getElementById("messages");
             msgContainer.innerHTML = "";
             payload.messages.slice().reverse().forEach(msg => {
                 const div = document.createElement("div");
-                div.innerText = `[${msg.sender_id}] ${msg.message}`;
+                div.innerText = `[${msg.sender_id}] ${msg.content}`;
                 msgContainer.appendChild(div);
             });
         });
 
         talkChannel.on("new_msg", msg => {
             const div = document.createElement("div");
-            div.innerText = `[${msg.sender_id}] ${msg.message}`;
+            div.innerText = `[${msg.sender_id}] ${msg.content}`;
             document.getElementById("messages").appendChild(div);
         });
     }
@@ -81,3 +82,29 @@ document.addEventListener("DOMContentLoaded", () => {
         input.value = "";
     }
 });
+
+let Lobby = {
+  init(socket) {
+    // ... (init 함수 윗부분은 변경 없음)
+  },
+
+  renderRooms(rooms) {
+    if (rooms.length === 0) {
+      this.roomList.innerHTML = '<p>현재 열려있는 채팅방이 없습니다. 새 방을 만들어보세요!</p>';
+      return;
+    }
+
+    let roomLinks = rooms.map(room => {
+      return `
+        <li>
+          <span class="room-name">${room.name}</span>
+          <a href="/chat?room_id=${room.id}" class="join-button">입장</a>
+        </li>
+      `;
+    }).join('');
+
+    this.roomList.innerHTML = roomLinks;
+  }
+};
+
+export default Lobby;
