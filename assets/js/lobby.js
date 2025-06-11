@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
         chatLobby.style.display = "none";
         chatRoom.style.display = "block";
         roomTitle.innerText = roomName;
+        let messages = [];
 
         if (talkChannel) talkChannel.leave();
 
@@ -59,14 +60,43 @@ document.addEventListener("DOMContentLoaded", () => {
             .receive("error", () => console.error("❌ 채팅방 입장 실패"));
 
         talkChannel.on("messages", payload => {
+            const newMessages = payload.messages;
+            messages = newMessages;
             messagesContainer.innerHTML = "";
-            payload.messages.slice().reverse().forEach(msg => {
+
+            newMessages.forEach(msg => {
                 appendMessage(msg, msg.sender_id === userId);
             });
         });
 
         talkChannel.on("new_msg", msg => {
             appendMessage(msg, msg.sender_id === userId);
+        });
+
+        talkChannel.on("messages:prepend", payload => {
+            const scrollPos = messagesContainer.scrollHeight;
+
+            payload.messages.forEach(msg => {
+                // 중복 메시지 방지: 이미 message_id가 있으면 건너뜀
+                if (messages.some(m => m.message_id === msg.message_id)) return;
+
+                messages.unshift(msg);
+
+                const div = document.createElement("div");
+                div.className = msg.sender_id === userId ? "message mine" : "message other";
+                div.innerHTML = `<div class="bubble">${msg.message}</div>`;
+                messagesContainer.prepend(div);
+            });
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight - scrollPos;
+        });
+
+        // 맨 위로 스크롤했을 때 과거 메시지 로딩
+        messagesContainer.addEventListener("scroll", () => {
+            if (messagesContainer.scrollTop === 0 && messages.length > 0) {
+                const lastKey = messages[0].message_id;
+                talkChannel.push("load_more", { last_seen_key: lastKey });
+            }
         });
     }
 
@@ -105,4 +135,5 @@ document.addEventListener("DOMContentLoaded", () => {
         chatRoom.style.display = "none";
         chatLobby.style.display = "block";
     });
+
 });
