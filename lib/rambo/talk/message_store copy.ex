@@ -15,7 +15,7 @@ defmodule Rambo.Talk.MessageStore do
       |> DateTime.truncate(:millisecond)
       |> DateTime.to_iso8601()
 
-    # sender_id가 문자열로 오면 정수로 변환
+
     sender_id =
       case attrs["sender_id"] || attrs[:sender_id] do
         nil ->
@@ -33,6 +33,7 @@ defmodule Rambo.Talk.MessageStore do
     item = %{
       "pk" => pk,
       "sk" => sk,
+      "name" => attrs["name"] || attrs[:name],
       "message_id" => message_id,
       "sender_id" => sender_id,
       "content" => attrs["content"] || attrs[:content],

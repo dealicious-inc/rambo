@@ -27,20 +27,25 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
+
   def handle_in("new_msg", %{"user" => user_id, "message" => message}, socket) do
     room_id = socket.assigns.room_id
     timestamp = System.system_time(:millisecond)
 
     Logger.info("톡채널")
     with {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(room_id),
+      # ddb insert
          {:ok, item} <- Rambo.Talk.MessageStore.store_message(%{
            room_id: room_id,
            timestamp: timestamp,
            sender_id: user_id,
            content: message,
+           name: room.name,
          }),
          :ok <- TalkRoomService.touch_activity(room_id) do
 
+      # item이 맵이므로 JSON 문자열로 인코딩
+      Logger.info("item type: #{inspect(item)}")
       case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
         :ok ->
           {:noreply, socket}
@@ -79,6 +84,7 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
+  # 이벤트를 수신했을 때 호출되는 콜백
   def handle_info({:msg, %{body: body}}, socket) do
     case Jason.decode(body) do
       {:ok, %{"message_id" => mid, "sender_id" => sid} = payload} ->
