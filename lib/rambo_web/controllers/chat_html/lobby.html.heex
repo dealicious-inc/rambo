@@ -1,11 +1,24 @@
-<div id="chat-lobby">
-  <h2>참여중인 채팅방</h2>
-   <ul id="user-room-list"></ul>
-</div>
+<link rel="stylesheet" href="/assets/css/app.css" />
 
-<div id="chat-room" style="display: none;">
-  <h2 id="room-title">채팅방</h2>
-  <div id="messages"></div>
-  <input id="message-input" type="text" placeholder="메시지 입력..." />
-  <button id="send-button">전송</button>
-</div>
+<body>
+  <div id="container">
+    <div id="chat-lobby">
+      <h2>채팅방 목록</h2>
+      <ul id="user-room-list"></ul>
+    </div>
+
+    <div id="chat-room" style="display: none;">
+      <div id="chat-header">
+        <span id="room-title"></span>
+        <button id="back-button">← 목록으로</button>
+      </div>
+
+      <div id="messages" class="message-list"></div>
+
+      <div id="input-area">
+        <input id="message-input" type="text" placeholder="메시지 입력..." />
+        <button id="send-button">전송</button>
+      </div>
+    </div>
+  </div>
+</body>
