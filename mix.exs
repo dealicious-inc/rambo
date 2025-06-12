@@ -55,7 +55,8 @@ defmodule Rambo.MixProject do
       {:timex, "~> 3.7"},
       {:jetstream, "~> 0.0.9"},
       {:redix, "~> 1.5"},
-      {:uuid, "~> 1.1"}
+      {:uuid, "~> 1.1"},
+      {:phoenix_live_reload, "~> 1.4", only: :dev},
     ]
   end
 
