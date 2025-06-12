@@ -7,9 +7,16 @@
       <root url="file://$PROJECT_DIR$/_build/dev/lib/nkeys/ebin" />
       <root url="file://$PROJECT_DIR$/_build/dev/lib/nkeys/ebin" />
       <root url="file://$PROJECT_DIR$/_build/dev/lib/nkeys/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/nkeys/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/nkeys/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/nkeys/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/nkeys/ebin" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
+      <root url="file://$PROJECT_DIR$/deps/nkeys/lib" />
+      <root url="file://$PROJECT_DIR$/deps/nkeys/lib" />
+      <root url="file://$PROJECT_DIR$/deps/nkeys/lib" />
       <root url="file://$PROJECT_DIR$/deps/nkeys/lib" />
       <root url="file://$PROJECT_DIR$/deps/nkeys/lib" />
       <root url="file://$PROJECT_DIR$/deps/nkeys/lib" />
