@@ -67,7 +67,6 @@ body {
 
 .message .bubble {
     padding: 10px 14px;
-    border-radius: 20px;
     max-width: 70%;
     word-break: break-word;
 }
@@ -78,6 +77,7 @@ body {
 
 .message.mine .bubble {
     background-color: #dcf8c6;
+    border-radius: 20px 20px 0px 20px;
 }
 
 .message.other {
@@ -86,6 +86,7 @@ body {
 
 .message.other .bubble {
     background-color: #f1f0f0;
+    border-radius: 20px 20px 20px 0px;
 }
 
 /* 입력 영역 */
@@ -97,7 +98,7 @@ body {
 #message-input {
     flex-grow: 1;
     padding: 10px;
-    border-radius: 20px;
+    border-radius: 10px;
     border: 1px solid #ccc;
     font-size: 14px;
 }
