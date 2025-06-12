@@ -7,9 +7,16 @@
       <root url="file://$PROJECT_DIR$/_build/dev/lib/gnat/ebin" />
       <root url="file://$PROJECT_DIR$/_build/dev/lib/gnat/ebin" />
       <root url="file://$PROJECT_DIR$/_build/dev/lib/gnat/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/gnat/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/gnat/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/gnat/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/gnat/ebin" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
+      <root url="file://$PROJECT_DIR$/deps/gnat/lib" />
+      <root url="file://$PROJECT_DIR$/deps/gnat/lib" />
+      <root url="file://$PROJECT_DIR$/deps/gnat/lib" />
       <root url="file://$PROJECT_DIR$/deps/gnat/lib" />
       <root url="file://$PROJECT_DIR$/deps/gnat/lib" />
       <root url="file://$PROJECT_DIR$/deps/gnat/lib" />
