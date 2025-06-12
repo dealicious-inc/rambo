@@ -53,17 +53,17 @@ defmodule RamboWeb.UserLobbyChannel do
     Logger.info("body #{(inspect(body))}")
     case Jason.decode(body) do
       {:ok, %{"id" => _room_ddb_id}} ->
-        IO.puts("📩 NATS message received → refreshing room list")
+        Logger.info("📩 NATS message received → refreshing room list")
         send(self(), :after_join)
 
       {:ok, %{"type" => "invitation", "room_id" => _, "to_user_id" => user_id}} ->
         if socket.assigns.user_id == user_id do
-          IO.puts("📨 초대 메시지 수신 → 방 목록 갱신")
+          Logger.info("📨 초대 메시지 수신 → 방 목록 갱신")
           send(self(), :after_join)
         end
 
       _ ->
-        IO.puts("❌ ㅋㅋㅋㅋInvalid or malformed NATS body: #{inspect(body)}")
+        IO.puts("❌ Invalid or malformed NATS body: #{inspect(body)}")
     end
 
     {:noreply, socket}

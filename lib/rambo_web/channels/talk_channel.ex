@@ -41,8 +41,9 @@ defmodule RamboWeb.TalkChannel do
            sender_id: user_id,
            content: message,
            name: room.name,
-         }),
-         :ok <- TalkRoomService.touch_activity(room_id) do
+         }) do
+        # 채팅 보낼때마다 업뎃해줄수는 없음
+        #  :ok <- TalkRoomService.touch_activity(room_id) do
 
       # item이 맵이므로 JSON 문자열로 인코딩
       Logger.info("item type: #{inspect(item)}")
