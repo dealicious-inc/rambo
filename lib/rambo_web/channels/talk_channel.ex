@@ -76,6 +76,21 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
+  # 과거 메시지 더 불러오기
+  def handle_in("load_more", %{"last_seen_key" => last_key}, socket) do
+    room_id = socket.assigns.room_id
+    IO.puts("불러옴불러옴")
+    case Rambo.Talk.MessageStore.get_messages(room_id, last_seen_key: last_key) do
+      {:ok, messages} ->
+        push(socket, "messages:prepend", %{messages: messages})
+        {:noreply, socket}
+
+      _ ->
+        push(socket, "messages:prepend", %{messages: []})
+        {:noreply, socket}
+    end
+  end
+
   def handle_info({:msg, %{body: body}}, socket) do
     case Jason.decode(body) do
       {:ok, %{"message_id" => mid, "sender_id" => sid} = payload} ->
