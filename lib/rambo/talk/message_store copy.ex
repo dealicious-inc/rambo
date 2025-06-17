@@ -38,7 +38,8 @@ defmodule Rambo.Talk.MessageStore do
       "sender_id" => sender_id,
       "content" => attrs["content"] || attrs[:content],
       "message_type" => Map.get(attrs, "message_type") || Map.get(attrs, :message_type, "text"),
-      "sent_at" => timestamp_kst
+      "sent_at" => timestamp_kst,
+      "sequence" => attrs[:sequence]
     }
 
     # 로깅: 저장할 항목 출력
@@ -66,7 +67,7 @@ defmodule Rambo.Talk.MessageStore do
       key_condition_expression: "pk = :pk",
       expression_attribute_values: [pk: pk],
       limit: limit,
-      scan_index_forward: false
+      scan_index_forward: true
     )
     |> ExAws.request()
     |> case do
@@ -79,7 +80,13 @@ defmodule Rambo.Talk.MessageStore do
     end
   end
 
-  def count_messages_after(room_id, last_read_key, user_id) do
+  def count_messages_after(room, last_read_key, user_id) do
+    Logger.info("""
+    📝 채팅방 정보
+    room #{(inspect(room))}"
+    last_read_key #{(inspect(last_read_key))}"
+    """)
+    # pk = "room:#{room.ddb_id}"
   end
 
 
@@ -90,15 +97,19 @@ defmodule Rambo.Talk.MessageStore do
     end
   end
 
-  defp parse_dynamo_item(item) do
+  def parse_dynamo_item(item) do
     Enum.into(item, %{}, fn {key, value_map} ->
-      # DynamoDB의 문자열 키를 Elixir의 아톰 키로 변환합니다.
-      # 예: "message_id" -> :message_id
+      # DynamoDB의 문자열 키를 Elixir의 아톰 키로 변환
       atom_key = String.to_atom(key)
 
-      # 맵에서 실제 값만 추출합니다.
+      # 맵에서 실제 값만 추출
       # 예: %{"S" => "some_string"} -> "some_string"
-      value = Map.values(value_map) |> List.first()
+      value = case value_map do
+        %{"S" => str} -> str                    # String 타입
+        %{"N" => num} -> String.to_integer(num) # Number 타입
+        %{"BOOL" => bool} -> bool               # Boolean 타입
+        _ -> Map.values(value_map) |> List.first() # 기타 타입
+      end
 
       {atom_key, value}
     end)

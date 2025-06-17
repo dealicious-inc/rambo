@@ -49,12 +49,15 @@ defmodule RamboWeb.UserLobbyChannel do
   end
 
   # 메시지를 수신했을 때 방 목록을 다시 push
+  # 안읽은 카운트 읽어주기
+  # after_join
   def handle_info({:msg, %{body: body}}, socket) do
-    Logger.info("body #{(inspect(body))}")
+
+    Logger.info("bodyzzzz: #{inspect(body)}")
     case Jason.decode(body) do
-      {:ok, %{"id" => _room_ddb_id}} ->
+      {:ok, %{"room_id" => _room_ddb_id}} ->
         Logger.info("📩 NATS message received → refreshing room list")
-        send(self(), :after_join)
+        # send(self(), :after_join)
 
       {:ok, %{"type" => "invitation", "room_id" => _, "to_user_id" => user_id}} ->
         if socket.assigns.user_id == user_id do

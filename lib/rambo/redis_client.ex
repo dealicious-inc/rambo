@@ -19,7 +19,7 @@ defmodule Rambo.RedisClient do
 
   def get(key) when is_binary(key) do
     case Redix.command(Rambo.Redis, ["GET", key]) do
-      {:ok, nil} -> {:error, :not_found}
+      {:ok, nil} -> {:ok, nil}
       {:ok, value} -> {:ok, value}
       error -> error
     end

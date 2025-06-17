@@ -3,6 +3,7 @@ defmodule RamboWeb.TalkChannel do
 
   alias Rambo.TalkRoomService
   alias Rambo.Talk.Subscriber
+  alias Rambo.Redis.RedisMessageStore
 
   require Logger
 
@@ -32,30 +33,32 @@ defmodule RamboWeb.TalkChannel do
     room_id = socket.assigns.room_id
     timestamp = System.system_time(:millisecond)
 
-    Logger.info("톡채널")
-    with {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(room_id),
+    Logger.info("톡채널 #{room_id}")
+    with {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(room_id) do
+
+        {:ok, max_sequence} = RedisMessageStore.get_room_max_sequence(room_id)
+
+        Logger.info("max_sequence: #{max_sequence}")
       # ddb insert
-         {:ok, item} <- Rambo.Talk.MessageStore.store_message(%{
-           room_id: room_id,
-           timestamp: timestamp,
-           sender_id: user_id,
-           content: message,
-           name: room.name,
-         }) do
-        # 채팅 보낼때마다 업뎃해줄수는 없음
-        #  :ok <- TalkRoomService.touch_activity(room_id) do
+         item = %{
+          room_id: room_id,
+          timestamp: timestamp,
+          sender_id: user_id,
+          content: message,
+          name: room.name,
+          sequence: max_sequence + 1
+        }
+        Rambo.Talk.MessageStore.store_message(item)
+        RedisMessageStore.update_room_max_sequence(room_id)
 
-      # item이 맵이므로 JSON 문자열로 인코딩
-      Logger.info("item type: #{inspect(item)}")
-      case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
-        :ok ->
-          {:noreply, socket}
-
-        err ->
+        # TODO 여기 부터 확인 필요
+        case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
+          {:ok, _} ->
+            IO.puts("NATS 전송 성공")
+        {:error, err} ->
           IO.inspect(err, label: "❌ Failed to publish to NATS")
           push(socket, "error", %{error: "Message stored but publish failed"})
-          {:noreply, socket}
-      end
+        end
     else
       error ->
         IO.inspect(error, label: "❌ Failed to store message or update activity")
@@ -88,6 +91,7 @@ defmodule RamboWeb.TalkChannel do
   # 이벤트를 수신했을 때 호출되는 콜백
   def handle_info({:msg, %{body: body}}, socket) do
     case Jason.decode(body) do
+
       {:ok, %{"message_id" => mid, "sender_id" => sid} = payload} ->
         push(socket, "new_msg", payload)
 

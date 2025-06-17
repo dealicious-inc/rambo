@@ -88,12 +88,14 @@ defmodule Rambo.TalkRoomService do
            join: m in TalkRoomUser,
            on: m.talk_room_id == r.id,
            where: m.user_id == ^user_id,
-           select: {r, m.last_read_message_key}
+           select: {r, m.last_read_message_key},
+           preload: :talk_room_users
 
     Repo.all(query)
     |> Enum.map(fn {room, last_read_key} ->
+
       unread_count =
-        case Rambo.Talk.MessageStore.count_messages_after("#{room.ddb_id}", last_read_key, user_id) do
+        case Rambo.Talk.MessageStore.count_messages_after(room, last_read_key, user_id) do
           {:ok, count} -> count
           _ -> 0
         end

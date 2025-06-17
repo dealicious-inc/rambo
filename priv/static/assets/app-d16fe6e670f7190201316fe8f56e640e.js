@@ -6,7 +6,9 @@
         </div>
       `,u.addEventListener("click",()=>B(v.id,v.name)),r.appendChild(u)})});function B(d,v){o.style.display="none",a.style.display="block",n.innerText=v;let u=[];c&&c.leave(),c=s.channel(`talk:${d}`,{user_id:t}),c.join().receive("ok",()=>{console.log(`\u2705 \uCC44\uD305\uBC29 ${d} \uC785\uC7A5 \uC131\uACF5`),c.push("fetch_messages",{})}).receive("error",()=>console.error("\u274C \uCC44\uD305\uBC29 \uC785\uC7A5 \uC2E4\uD328")),c.on("messages",b=>{let R=b.messages;u=R,h.innerHTML="",R.forEach(C=>{M(C,C.sender_id===t)})}),c.on("new_msg",b=>{M(b,b.sender_id===t)}),c.on("messages:prepend",b=>{let R=h.scrollHeight;b.messages.forEach(C=>{if(u.some(D=>D.message_id===C.message_id))return;u.unshift(C);let A=document.createElement("div");A.className=C.sender_id===t?"message mine":"message other",A.innerHTML=`<div class="bubble">${C.content}</div>`,h.prepend(A)}),h.scrollTop=h.scrollHeight-R}),h.addEventListener("scroll",()=>{if(h.scrollTop===0&&u.length>0){let b=u[0].message_id;c.push("load_more",{last_seen_key:b})}})}function M(d,v){let u=document.createElement("div");u.className=v?"message mine":"message other",u.innerHTML=`
           <div class="message-content">
-            <div class="bubble">${d.content}</div>
+            <div class="bubble">
+              ${d.content}
+            </div>
             <div class="message-time">${U(d.sent_at)}</div>
           </div>
         `,h.appendChild(u),h.scrollTop=h.scrollHeight}function U(d){return new Date(d).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",hour12:!1})}let $=!1;l.addEventListener("compositionstart",()=>{$=!0}),l.addEventListener("compositionend",()=>{$=!1}),m.addEventListener("click",P),l.addEventListener("keydown",function(d){$||d.key==="Enter"&&(d.preventDefault(),P())});function P(){let d=l.value.trim();!d||!c||(c.push("new_msg",{user:t,message:d}),l.value="")}p.addEventListener("click",()=>{c&&c.leave(),a.style.display="none",o.style.display="block"})});})();

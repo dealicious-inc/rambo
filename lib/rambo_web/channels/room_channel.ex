@@ -31,8 +31,6 @@ defmodule RamboWeb.RoomChannel do
           "timestamp" => timestamp,
           "sequence" => max_sequence.to_integer() + 1
         }
-        IO.puts("#{room_id}는 몇개의 메시지가있냐면,")
-        RedisClient.set("d12344d", 1000)
         Rambo.Redis.RedisMessageStore.update_room_max_sequence(room_id)
 
         case ExAws.Dynamo.put_item("messages", item) |> ExAws.request() do
