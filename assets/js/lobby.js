@@ -70,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         talkChannel.on("new_msg", msg => {
-            console.log({"ㅋㅋㅋ":msg})
             appendMessage(msg, msg.sender_id === userId);
         });
 
