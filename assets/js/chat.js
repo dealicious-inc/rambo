@@ -3,6 +3,7 @@ import {Socket} from "phoenix"
 document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search)
     const roomId = urlParams.get("room_id")
+    const userId = urlParams.get("userId");
 
     // room_id가 없으면 실행하지 않음 (예: /rooms 페이지)
     if (!roomId) {
@@ -50,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         channel.push("new_msg", {
             id: roomId,
-            user: 1,  // 유저 ID는 필요하면 동적으로 바꿀 수 있음
+            user: userId,  // 유저 ID는 필요하면 동적으로 바꿀 수 있음
             message: message
         })
 
