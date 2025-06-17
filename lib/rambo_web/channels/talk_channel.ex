@@ -4,6 +4,7 @@ defmodule RamboWeb.TalkChannel do
   alias Rambo.TalkRoomService
   alias Rambo.Talk.Subscriber
 
+  # 유저가 채팅방에 입장하며 NATS 구독 및 읽음 처리 수행
   def join("talk:" <> room_id_str, %{"user_id" => user_id_str}, socket) do
     with {room_id, _} <- Integer.parse(room_id_str),
          user_id = String.to_integer("#{user_id_str}"),
@@ -25,6 +26,7 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
+  # 메시지 저장 후 JetStream으로 퍼블리시
   def handle_in("new_msg", %{"user" => user_id, "message" => message}, socket) do
     room_id = socket.assigns.room_id
 
@@ -55,7 +57,7 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
-  # 읽음처리
+  # 클라이언트 측 명시적 읽음 처리
   def handle_in("mark_read", %{"last_read_key" => key}, socket) do
     TalkRoomService.mark_as_read(socket.assigns.room_id, socket.assigns.user_id, key)
     {:noreply, socket}
@@ -76,7 +78,7 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
-  # 과거 메시지 더 불러오기
+  # 이전 메시지 페이징 불러오기
   def handle_in("load_more", %{"last_seen_key" => last_key}, socket) do
     room_id = socket.assigns.room_id
     IO.puts("불러옴불러옴")
@@ -91,6 +93,7 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
+  # JetStream 구독 메시지 수신 시 처리 (본인이 아닌 경우 읽음 처리)
   def handle_info({:msg, %{body: body}}, socket) do
     case Jason.decode(body) do
       {:ok, %{"message_id" => mid, "sender_id" => sid} = payload} ->
