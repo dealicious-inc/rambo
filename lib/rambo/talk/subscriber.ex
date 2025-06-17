@@ -1,6 +1,7 @@
 defmodule Rambo.Talk.Subscriber do
   alias Rambo.Nats.JetStream
 
+  # talk.room.#{room_id}로 new_msg 이벤트 브로드 캐스팅, TalkChannel에서 수신한 클라이언트가 메시지를 받게됨
   def subscribe_room(room_id) do
     subject = "talk.room.#{room_id}"
     IO.puts("🟡 [subscribe_room] Subscribing to: #{subject}")
@@ -19,6 +20,7 @@ defmodule Rambo.Talk.Subscriber do
     end)
   end
 
+  # 로비 화면에서 채팅방 목록을 갱신해야 할 필요가 생긴 경우에 사용
   def subscribe_room_for_lobby(room_id, pid) do
     subject = "talk.room.#{room_id}"
 
