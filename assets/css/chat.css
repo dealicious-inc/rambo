@@ -89,6 +89,21 @@ body {
     border-radius: 20px 20px 20px 0px;
 }
 
+/* 메시지 시간 스타일 */
+.message-time {
+    font-size: 10px;
+    color: #999;
+    margin-top: 2px;
+}
+
+.message.mine .message-time {
+    text-align: right;
+}
+
+.message.other .message-time {
+    text-align: left;
+}
+
 /* 입력 영역 */
 #input-area {
     display: flex;

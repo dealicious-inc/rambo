@@ -104,12 +104,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const div = document.createElement("div");
         div.className = isMine ? "message mine" : "message other";
         div.innerHTML = `
-      <div class="bubble">
-        ${msg.content}
-      </div>
-    `;
+          <div class="message-content">
+            <div class="bubble">${msg.content}</div>
+            <div class="message-time">${formatTime(msg.sent_at)}</div>
+          </div>
+        `;
         messagesContainer.appendChild(div);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
     }
 
     let isComposing = false;

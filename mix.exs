@@ -57,6 +57,7 @@ defmodule Rambo.MixProject do
       {:redix, "~> 1.5"},
       {:uuid, "~> 1.1"},
       {:phoenix_live_reload, "~> 1.4", only: :dev},
+      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev}
     ]
   end
 
