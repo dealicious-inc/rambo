@@ -70,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         talkChannel.on("new_msg", msg => {
+            console.log({"ㅋㅋㅋ":msg})
             appendMessage(msg, msg.sender_id === userId);
         });
 
@@ -112,9 +113,24 @@ document.addEventListener("DOMContentLoaded", () => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
+    let isComposing = false;
+
+    // 한글 입력 시작
+    input.addEventListener("compositionstart", () => {
+        isComposing = true;
+    });
+
+    // 한글 입력 종료
+    input.addEventListener("compositionend", () => {
+        isComposing = false;
+    });
+
     sendButton.addEventListener("click", sendMessage);
     input.addEventListener("keydown", function (event) {
+        if (isComposing) return; // 한글 조합 중이면 무시
+
         if (event.key === "Enter") {
+            event.preventDefault();
             sendMessage();
         }
     });
