@@ -11,6 +11,11 @@ document.addEventListener("DOMContentLoaded", () => {
         return
     }
 
+    if (!userId) {
+        console.error("userId 누락됨, 채널 join 불가")
+        return
+    }
+
     // 채팅방 UI 요소 가져오기
     const messageList = document.getElementById("messages")
     const input = document.getElementById("message-input")
@@ -27,11 +32,10 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.connect()
 
     // 채널 연결
-    const channel = socket.channel(`room:${roomId}`, {})
-
+    const channel = socket.channel(`room:${roomId}`, { user_id: userId })
     channel.join()
         .receive("ok", resp => {
-            console.log(`✅ Joined room ${roomId}`, resp)
+            console.log("Joining channel with:", { user_id: userId })
         })
         .receive("error", resp => {
             console.error("❌ Unable to join", resp)
@@ -43,6 +47,11 @@ document.addEventListener("DOMContentLoaded", () => {
         li.textContent = `${payload.user}: ${payload.message} (${payload.timestamp})`
         messageList.appendChild(li)
     })
+
+    channel.on("user_count", payload => {
+        const label = document.getElementById("user-count");
+        if (label) label.innerText = `👥 ${payload.count}명 참여 중`;
+    });
 
     // 메시지 전송 함수 (클릭 + 엔터에서 같이 사용)
     function sendMessage() {

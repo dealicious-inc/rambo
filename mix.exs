@@ -53,8 +53,9 @@ defmodule Rambo.MixProject do
       {:elixir_uuid, "~> 1.2"},
       {:tzdata, "~> 1.1"},
       {:timex, "~> 3.7"},
-      {:jetstream, "~> 0.0.9"}
-    ]
+      {:jetstream, "~> 0.0.9"},
+      {:redix, ">= 1.2.3"}
+   ]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
