@@ -69,6 +69,7 @@
       <excludeFolder url="file://$MODULE_DIR$/_build/dev/lib/tzdata" />
       <excludeFolder url="file://$MODULE_DIR$/_build/dev/lib/unicode_util_compat" />
       <excludeFolder url="file://$MODULE_DIR$/_build/dev/lib/jetstream" />
+      <excludeFolder url="file://$MODULE_DIR$/_build/dev/lib/redix" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -175,5 +176,6 @@
     <orderEntry type="library" name="combine" level="project" />
     <orderEntry type="library" name="jetstream" level="project" />
     <orderEntry type="library" name="broadway" level="project" />
+    <orderEntry type="library" name="redix" level="project" />
   </component>
 </module>

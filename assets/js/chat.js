@@ -5,10 +5,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const roomId = urlParams.get("room_id")
     const userId = urlParams.get("userId");
 
-    // room_id가 없으면 실행하지 않음 (예: /rooms 페이지)
     if (!roomId) {
         console.log("room_id 없음 → chat.js 실행 안함")
         return
+    }
+
+    if (!userId) {
+        console.error("userId 누락됨, 채널 join 불가")
+        return
+    }
+
+    const backButton = document.getElementById("back-button")
+    if (backButton && userId) {
+        backButton.addEventListener("click", () => {
+            window.location.href = `/rooms?userId=${userId}`;
+        })
     }
 
     // 채팅방 UI 요소 가져오기
@@ -27,11 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.connect()
 
     // 채널 연결
-    const channel = socket.channel(`room:${roomId}`, {})
-
+    const channel = socket.channel(`room:${roomId}`, { user_id: userId })
     channel.join()
         .receive("ok", resp => {
-            console.log(`✅ Joined room ${roomId}`, resp)
+            console.log("Joining channel with:", { user_id: userId })
         })
         .receive("error", resp => {
             console.error("❌ Unable to join", resp)
@@ -43,6 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
         li.textContent = `${payload.user}: ${payload.message} (${payload.timestamp})`
         messageList.appendChild(li)
     })
+
+    channel.on("user_count", payload => {
+        const label = document.getElementById("user-count");
+        if (label) label.innerText = `👥 ${payload.count}명 참여 중`;
+    });
 
     // 메시지 전송 함수 (클릭 + 엔터에서 같이 사용)
     function sendMessage() {
