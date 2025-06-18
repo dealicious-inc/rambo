@@ -5,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const roomId = urlParams.get("room_id")
     const userId = urlParams.get("userId");
 
-    // room_id가 없으면 실행하지 않음 (예: /rooms 페이지)
     if (!roomId) {
         console.log("room_id 없음 → chat.js 실행 안함")
         return
@@ -14,6 +13,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!userId) {
         console.error("userId 누락됨, 채널 join 불가")
         return
+    }
+
+    const backButton = document.getElementById("back-button")
+    if (backButton && userId) {
+        backButton.addEventListener("click", () => {
+            window.location.href = `/rooms?userId=${userId}`;
+        })
     }
 
     // 채팅방 UI 요소 가져오기
