@@ -1,7 +1,7 @@
 defmodule RamboWeb.RoomChannel do
   use Phoenix.Channel
 
-  @expire_seconds 60
+  @expire_seconds 3600
 
   def join("room:" <> room_id, %{"user_id" => user_id}, socket) do
     room_id = String.to_integer(room_id)
