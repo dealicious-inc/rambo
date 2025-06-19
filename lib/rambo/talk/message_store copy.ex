@@ -5,6 +5,8 @@ defmodule Rambo.Talk.MessageStore do
 
   require Logger
   alias Rambo.Repo
+  alias Rambo.Ddb.DynamoDbService
+  alias Rambo.Redis.RedisMessageStore
 
   def store_message(attrs) do
     pk = "room:#{attrs[:room_id]}"
@@ -80,13 +82,30 @@ defmodule Rambo.Talk.MessageStore do
     end
   end
 
-  def count_messages_after(room, last_read_key, user_id) do
+  # 안읽은 메시지갯수 가져오는 함수?
+  def get_unread_message_count(room, last_read_key) do
     Logger.info("""
     📝 채팅방 정보
     room #{(inspect(room))}"
     last_read_key #{(inspect(last_read_key))}"
     """)
-    # pk = "room:#{room.ddb_id}"
+
+    {:ok, room_max_seq} = RedisMessageStore.get_room_max_sequence(room.id)
+
+    room_max_seq = room_max_seq
+    Logger.info("room_max_seq: #{room_max_seq}")
+
+
+    # redis에 있으면 redis에서 가져오고 없으면 rdb값보고 ddb조회해서 가져오기
+    case last_read_key do
+      nil -> 1
+      message_id ->
+        # ddb 에서 gsi써서 해당 메시지의 seq 가져오기
+        {:ok, last_read_msg_seq} = DynamoDbService.get_message_sequence(room.id, message_id)
+
+        Logger.info("GSI 쿼리 결과: #{inspect(last_read_msg_seq)}")
+        room_max_seq - last_read_msg_seq
+    end
   end
 
 

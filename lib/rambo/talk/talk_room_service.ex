@@ -2,6 +2,7 @@ defmodule Rambo.TalkRoomService do
   @moduledoc """
   TalkRoom 생성, 참여, 읽음 처리 등 채팅방 관련 서비스 로직
   """
+  require Logger
 
   alias Rambo.Repo
   alias Rambo.TalkRoom
@@ -95,11 +96,10 @@ defmodule Rambo.TalkRoomService do
     |> Enum.map(fn {room, last_read_key} ->
 
       unread_count =
-        case Rambo.Talk.MessageStore.count_messages_after(room, last_read_key, user_id) do
-          {:ok, count} -> count
-          _ -> 0
+        case Rambo.Talk.MessageStore.get_unread_message_count(room, last_read_key) do
+          count -> count
         end
-
+        Logger.info("unread_count: #{unread_count}")
       %{
         id: room.id,
         name: room.name,
