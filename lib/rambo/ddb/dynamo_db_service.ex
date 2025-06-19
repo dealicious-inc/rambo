@@ -5,6 +5,28 @@ defmodule Rambo.Ddb.DynamoDbService do
   alias Rambo.RedisClient
   alias Rambo.Redis.RedisMessageStore
 
+
+  def get_messages(room_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 20)
+    pk = "room:#{room_id}"
+
+    ExAws.Dynamo.query(@table,
+      key_condition_expression: "pk = :pk",
+      expression_attribute_values: [pk: pk],
+      limit: limit,
+      scan_index_forward: true
+    )
+    |> ExAws.request()
+    |> case do
+      {:ok, %{"Items" => items}} ->
+        parsed_items = Enum.map(items, &parse_dynamo_item/1)
+        {:ok, parsed_items}
+
+      error ->
+        error
+    end
+  end
+
   # ddb에서 message_id로 메시지 sequence 조회
   @typedoc """
   @spec get_message_sequence(String.t(), String.t()) :: {:ok, integer()} | {:error, any()}
@@ -61,7 +83,7 @@ defmodule Rambo.Ddb.DynamoDbService do
             end
             Logger.info("🔢 추출된 sequence: #{sequence}")
 
-            RedisClient.set("#{Rambo.Redis.RedisMessageStore.redis_room_max_sequence_key()}:#{room_id}", to_string(sequence))
+            RedisClient.set("#{RedisMessageStore.redis_room_max_sequence_key()}:#{room_id}", to_string(sequence))
             {:ok, sequence}
 
           %{"Items" => []} ->
@@ -73,5 +95,23 @@ defmodule Rambo.Ddb.DynamoDbService do
         Logger.error("❌ DynamoDB 쿼리 실패: #{inspect(reason, pretty: true, limit: :infinity)}")
         error
     end
+  end
+
+  def parse_dynamo_item(item) do
+    Enum.into(item, %{}, fn {key, value_map} ->
+      # DynamoDB의 문자열 키를 Elixir의 아톰 키로 변환
+      atom_key = String.to_atom(key)
+
+      # 맵에서 실제 값만 추출
+      # 예: %{"S" => "some_string"} -> "some_string"
+      value = case value_map do
+        %{"S" => str} -> str                    # String 타입
+        %{"N" => num} -> String.to_integer(num) # Number 타입
+        %{"BOOL" => bool} -> bool               # Boolean 타입
+        _ -> Map.values(value_map) |> List.first() # 기타 타입
+      end
+
+      {atom_key, value}
+    end)
   end
 end

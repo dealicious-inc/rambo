@@ -7,14 +7,9 @@ defmodule Rambo.Redis.RedisMessageStore do
   alias Rambo.RedisClient
   alias Rambo.Ddb.DynamoDbService
 
-  # 방의 최대 메시지 sequence를 저장하는 Redis 키 접두사
-  @redis_room_max_sequence_key "room_max_sequence"
   # 유저의 마지막 읽은 메시지 정보 만료 시간 (1시간)
-  @ttl_seconds 30
+  @ttl_seconds 3600
 
-  @doc """
-  Redis 키 접두사를 반환합니다.
-  """
   def redis_room_max_sequence_key, do: @redis_room_max_sequence_key
 
   @doc """
@@ -38,7 +33,7 @@ defmodule Rambo.Redis.RedisMessageStore do
   end
 
   @doc """
-  특정 유저가 특정 방에서 마지막으로 읽은 메시지 정보를 Redis에 저장합니다.
+  특정 유저가 특정 방에서 마지막으로 읽은 메시지 정보를 Redis에 저장
   """
   def update_user_last_read(room_id, user_id, message_key) do
     key = "room:#{room_id}#user:#{user_id}"
@@ -77,8 +72,8 @@ defmodule Rambo.Redis.RedisMessageStore do
   end
 
   @doc """
-  특정 유저가 특정 방에서 마지막으로 읽은 메시지 정보를 조회합니다.
-
+  특정 유저가 특정 방에서 마지막으로 읽은 메시지 정보를 조회
+  redis에 없으면 rdb에서 조회
   ## 매개변수
     - room_id: 방 ID
     - user_id: 사용자 ID
@@ -86,7 +81,8 @@ defmodule Rambo.Redis.RedisMessageStore do
   def get_user_last_read(room_id, user_id) do
     key = "room:#{room_id}#user:#{user_id}"
     case RedisClient.get(key) do
-      {:ok, nil} -> {:error, :not_found}
+      {:ok, nil} ->  nil
+      {:ok, value} -> value
       result -> result
     end
   end

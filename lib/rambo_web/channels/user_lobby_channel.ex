@@ -57,7 +57,7 @@ defmodule RamboWeb.UserLobbyChannel do
     case Jason.decode(body) do
       {:ok, %{"room_id" => _room_ddb_id}} ->
         Logger.info("📩 NATS message received → refreshing room list")
-        # send(self(), :after_join)
+        send(self(), :after_join)
 
       {:ok, %{"type" => "invitation", "room_id" => _, "to_user_id" => user_id}} ->
         if socket.assigns.user_id == user_id do

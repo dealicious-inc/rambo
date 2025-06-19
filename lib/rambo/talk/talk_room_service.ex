@@ -7,6 +7,7 @@ defmodule Rambo.TalkRoomService do
   alias Rambo.Repo
   alias Rambo.TalkRoom
   alias Rambo.TalkRoomUser
+  alias Rambo.Ddb.DynamoDbService
   import Ecto.Query
 
   ## 1. 채팅방 생성
@@ -119,7 +120,7 @@ defmodule Rambo.TalkRoomService do
   end
 
   def get_latest_message_id(room_id) do
-    case Rambo.Talk.MessageStore.get_messages(room_id, limit: 1) do
+    case DynamoDbService.get_messages(room_id, limit: 1) do
       {:ok, [latest | _]} -> {:ok, latest.message_id}
       _ -> {:ok, nil}
     end

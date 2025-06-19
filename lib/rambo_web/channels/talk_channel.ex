@@ -4,6 +4,7 @@ defmodule RamboWeb.TalkChannel do
   alias Rambo.TalkRoomService
   alias Rambo.Talk.Subscriber
   alias Rambo.Redis.RedisMessageStore
+  alias Rambo.Ddb.DynamoDbService
 
   require Logger
 
@@ -77,7 +78,7 @@ defmodule RamboWeb.TalkChannel do
   def handle_in("fetch_messages", _payload, socket) do
     room_id = socket.assigns.room_id
 
-    case Rambo.Talk.MessageStore.get_messages(room_id) do
+    case DynamoDbService.get_messages(room_id) do
       {:ok, messages} ->
         push(socket, "messages", %{messages: messages})
         {:noreply, socket}
