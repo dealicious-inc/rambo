@@ -5,11 +5,17 @@ defmodule Rambo.Redis.RedisMessageStore do
 
   require Logger
   alias Rambo.RedisClient
+  alias Rambo.Ddb.DynamoDbService
 
   # 방의 최대 메시지 sequence를 저장하는 Redis 키 접두사
   @redis_room_max_sequence_key "room_max_sequence"
   # 유저의 마지막 읽은 메시지 정보 만료 시간 (1시간)
-  @ttl_seconds 3600
+  @ttl_seconds 30
+
+  @doc """
+  Redis 키 접두사를 반환합니다.
+  """
+  def redis_room_max_sequence_key, do: @redis_room_max_sequence_key
 
   @doc """
   방의 최대 메시지 sequence를 Redis에 저장
@@ -23,7 +29,7 @@ defmodule Rambo.Redis.RedisMessageStore do
         error -> error
       end
     else
-      case fetch_max_sequence_from_dynamo(room_id) do
+      case DynamoDbService.fetch_max_sequence_from_dynamo(room_id) do
         {:ok, max_sequence} ->
           RedisClient.set(key, to_string(max_sequence + 1))
         error -> error
@@ -59,7 +65,7 @@ defmodule Rambo.Redis.RedisMessageStore do
       {:ok, nil} ->
         # Redis에 없으면 DynamoDB에서 조회
         Logger.info("Redis에 없으면 DynamoDB에서 조회")
-        fetch_max_sequence_from_dynamo(room_id)
+        DynamoDbService.fetch_max_sequence_from_dynamo(room_id)
 
       {:ok, value} ->
         {:ok, String.to_integer(value)}
@@ -82,46 +88,6 @@ defmodule Rambo.Redis.RedisMessageStore do
     case RedisClient.get(key) do
       {:ok, nil} -> {:error, :not_found}
       result -> result
-    end
-  end
-
-  # 내부 함수
-
-  @doc false
-  def fetch_max_sequence_from_dynamo(room_id) do
-    pk = "room:#{room_id}"
-
-    Logger.info("pk: #{pk} 다이나모에서 찾기 시작 #{room_id}")
-    query_params = [
-      key_condition_expression: "pk = :pk",
-      expression_attribute_values: [pk: pk],
-      scan_index_forward: false,
-      limit: 1
-    ]
-
-    case ExAws.Dynamo.query("messages", query_params) |> ExAws.request() do
-      {:ok, response} ->
-        # 전체 응답 구조 확인
-        Logger.info("📋 DynamoDB 쿼리 전체 응답: #{inspect(response, pretty: true, limit: :infinity)}")
-
-        case response do
-          %{"Items" => [latest_msg | _]} ->
-            Logger.info("📝 최신 메시지: #{inspect(latest_msg, pretty: true, limit: :infinity)}")
-
-            sequence = String.to_integer(latest_msg["sequence"]["N"])
-            Logger.info("🔢 추출된 sequence: #{sequence}")
-
-            RedisClient.set("#{@redis_room_max_sequence_key}:#{room_id}", sequence)
-            {:ok, sequence}
-
-          %{"Items" => []} ->
-            Logger.info("📭 메시지가 없습니다")
-            {:ok, 0}
-        end
-
-      {:error, reason} = error ->
-        Logger.error("❌ DynamoDB 쿼리 실패: #{inspect(reason, pretty: true, limit: :infinity)}")
-        error
     end
   end
 end
