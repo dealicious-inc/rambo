@@ -34,12 +34,25 @@ aws dynamodb create-table \
 --endpoint-url http://localhost:8000 \
 --table-name messages \
 --attribute-definitions \
-AttributeName=id,AttributeType=S \
-AttributeName=message_id,AttributeType=S \
+  AttributeName=pk,AttributeType=S \
+  AttributeName=sk,AttributeType=S \
+  AttributeName=message_id,AttributeType=S \
 --key-schema \
-AttributeName=id,KeyType=HASH \
-AttributeName=message_id,KeyType=RANGE \
+  AttributeName=pk,KeyType=HASH \
+  AttributeName=sk,KeyType=RANGE \
 --billing-mode PAY_PER_REQUEST \
+--global-secondary-indexes '[
+  {
+    "IndexName": "message_id_gsi",
+    "KeySchema": [
+      { "AttributeName": "pk", "KeyType": "HASH" },
+      { "AttributeName": "message_id", "KeyType": "RANGE" }
+    ],
+    "Projection": {
+      "ProjectionType": "ALL"
+    }
+  }
+]' \
 --region ap-northeast-2
 ```
 
@@ -75,7 +88,8 @@ aws dynamodb create-table \
   {
     "IndexName": "message_id_gsi",
     "KeySchema": [
-      { "AttributeName": "message_id", "KeyType": "HASH" }
+      { "AttributeName": "pk", "KeyType": "HASH" },
+      { "AttributeName": "message_id", "KeyType": "RANGE" }
     ],
     "Projection": {
       "ProjectionType": "ALL"
