@@ -17,6 +17,9 @@ defmodule Rambo.RedisClient do
     end
   end
 
+  @typedoc """
+  @spec get(String.t()) :: {:ok, String.t()} | {:error, any()}
+  """
   def get(key) when is_binary(key) do
     case Redix.command(Rambo.Redis, ["GET", key]) do
       {:ok, nil} -> {:ok, nil}
