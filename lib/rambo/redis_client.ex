@@ -9,7 +9,7 @@ defmodule Rambo.RedisClient do
     Logger.debug("Redis SET 시도: key=#{key}, value=#{inspect(value)}")
     case Redix.command(Rambo.Redis, ["SET", key, to_string(value)]) do
       {:ok, "OK"} ->
-        IO.puts("Redis SET 성공")
+        Logger.info("Redis SET 성공")
         :ok
       error ->
         Logger.error("Redis SET 실패: #{inspect(error)}")
@@ -41,7 +41,13 @@ defmodule Rambo.RedisClient do
   end
 
   def expire(key, seconds) when is_binary(key) and is_integer(seconds) and seconds > 0 do
-    Redix.command(Rambo.Redis, ["EXPIRE", key, to_string(seconds)])
+    Logger.info("Redis EXPIRE 시도: key=#{key}, seconds=#{seconds}")
+    case Redix.command(Rambo.Redis, ["EXPIRE", key, to_string(seconds)]) do
+      {:ok, 1} -> :ok
+      {:ok, 0} -> {:error, :key_not_found}
+      error -> Logger.error("Redis EXPIRE 실패: key=#{key}, seconds=#{seconds}, error=#{inspect(error, pretty: true)}")
+      error
+    end
   end
 
   def incr(key) when is_binary(key) do
@@ -69,4 +75,15 @@ defmodule Rambo.RedisClient do
   #     error -> error
   #   end
   # end
+
+  def del(key) when is_binary(key) do
+    Logger.info("Redis DEL 시도: key=#{key}")
+    case Redix.command(Rambo.Redis, ["DEL", key]) do
+      {:ok, 1} -> :ok
+      {:ok, 0} -> {:error, :key_not_found}
+      error ->
+        Logger.error("Redis DEL 실패: key=#{key}, error=#{inspect(error, pretty: true)}")
+        error
+    end
+  end
 end

@@ -8,7 +8,8 @@ defmodule Rambo.Redis.RedisMessageStore do
   alias Rambo.Ddb.DynamoDbService
 
   # 유저의 마지막 읽은 메시지 정보 만료 시간 (1시간)
-  @ttl_seconds 3600
+  @ttl_seconds 10
+  @back_key_ttl_seconds @ttl_seconds+30
   @redis_room_max_sequence_key "room_max_sequence"
 
   def redis_room_max_sequence_key, do: @redis_room_max_sequence_key
@@ -38,14 +39,23 @@ defmodule Rambo.Redis.RedisMessageStore do
   """
   def update_user_last_read(room_id, user_id, message_key) do
     key = "room:#{room_id}#user:#{user_id}"
+    backup_key = "backup#room:#{room_id}#user:#{user_id}"
     Logger.debug("유저 마지막 읽은 메시지 업데이트: #{key} = #{message_key}")
 
-    with {:ok, _} <- RedisClient.set(key, message_key),
-         :ok <- RedisClient.expire(key, @ttl_seconds) do
-      :ok
-    else
+    case RedisClient.set(key, message_key) do
+      :ok ->
+        RedisClient.set(backup_key, message_key)
+        case RedisClient.expire(key, @ttl_seconds) do
+          :ok ->
+            RedisClient.expire(backup_key, @back_key_ttl_seconds)
+            Logger.info("유저 마지막 읽은 메시지 ttl_seconds 업데이트 성공: #{key} = #{message_key}")
+            :ok
+          error ->
+            Logger.error("유저 마지막 읽은 메시지 expire 설정 실패: key=#{key}, ttl=#{@ttl_seconds}, error=#{inspect(error, pretty: true)}")
+            error
+        end
       error ->
-        Logger.error("유저 마지막 읽은 메시지 업데이트 실패: #{inspect(error)}")
+        Logger.error("유저 마지막 읽은 메시지 set 실패: key=#{key}, message_key=#{message_key}, error=#{inspect(error, pretty: true)}")
         error
     end
   end
@@ -86,5 +96,24 @@ defmodule Rambo.Redis.RedisMessageStore do
       {:ok, value} -> value
       result -> result
     end
+  end
+
+  def get_user_last_read_backup(room_id, user_id) do
+    Logger.info("함수안임 backupkey 조회  room_id=#{room_id}, user_id=#{user_id}")
+    key = get_backup_key(room_id, user_id)
+    case RedisClient.get(key) do
+      {:ok, nil} ->  nil
+      {:ok, value} -> value
+      result -> result
+    end
+  end
+
+  def delete_user_last_read_backup(room_id, user_id) do
+    key = get_backup_key(room_id, user_id)
+    RedisClient.del(key)
+  end
+
+  defp get_backup_key(room_id, user_id) do
+    "backup#room:#{room_id}#user:#{user_id}"
   end
 end

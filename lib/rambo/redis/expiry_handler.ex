@@ -51,6 +51,7 @@ defmodule Rambo.Redis.ExpiryHandler do
 
     Logger.info("redis key 만료 메시지 받음 key : #{inspect(key)}")
     if String.match?(key, ~r/^room:\d+#user:\d+$/) do
+      Logger.info("key 형식 일치: #{key}")
       try do
         # key 형식: room:123#user:456
         [room_part, user_part] = String.split(key, "#")
@@ -58,21 +59,30 @@ defmodule Rambo.Redis.ExpiryHandler do
         user_id = user_part |> String.replace("user:", "") |> String.to_integer()
 
         # Redis에서 해당 유저의 마지막 읽은 메시지 키 가져오기
-        case RedisMessageStore.get_user_last_read(room_id, user_id) do
-          {:ok, nil} -> nil # 없으면 읽은것도 없다고 간주
-          {:ok, last_read_key} ->
-            # talk_room_users 테이블 업데이트
-            from(tu in "talk_room_users",
-              where: tu.room_id == ^room_id and tu.user_id == ^user_id
-            )
-            |> Repo.update_all(
-              set: [
-                last_read_message_key: last_read_key,
-                updated_at: DateTime.utc_now()
-              ]
-            )
+        Logger.info("backupkey 조회 room_id=#{room_id}, user_id=#{user_id}")
+        case RedisMessageStore.get_user_last_read_backup(room_id, user_id) do
+          nil ->
+            Logger.info("backupkey 없음, 읽은것도 없다고 간주 room_id=#{room_id}, user_id=#{user_id}")
+            nil # 없으면 읽은것도 없다고 간주
+          last_read_key ->
+            Logger.info("backupkey 있음, 읽은것도 있다고 간주 room_id=#{room_id}, user_id=#{user_id} last_read_key=#{last_read_key}")
+            # talk_room_users 테이블에서 단일 레코드 조회 후 업데이트
+            case from(tu in Rambo.TalkRoomUser,
+              where: tu.talk_room_id == ^room_id and tu.user_id == ^user_id
+            ) |> Repo.one() do
+              nil ->
+                Logger.warning("talk_room_user not found for room_id=#{room_id}, user_id=#{user_id}")
+              talk_room_user ->
+                talk_room_user
+                |> Ecto.Changeset.change(%{
+                  last_read_message_key: last_read_key,
+                  updated_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+                })
+                |> Repo.update()
+            end
 
-            Logger.info("last_read_message_key 업데이트 room_id=#{room_id}, user_id=#{user_id}")
+            RedisMessageStore.delete_user_last_read_backup(room_id, user_id)
+            Logger.info("last_read_message_key 업데이트, backupkey 삭제 room_id=#{room_id}, user_id=#{user_id}")
 
           {:error, :not_found} ->
             Logger.warning("not found error, room_id=#{room_id}, user_id=#{user_id}")
