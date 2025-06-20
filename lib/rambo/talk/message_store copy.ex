@@ -5,6 +5,7 @@ defmodule Rambo.Talk.MessageStore do
 
   require Logger
   alias Rambo.Repo
+  alias Rambo.RedisClient
   alias Rambo.Ddb.DynamoDbService
   alias Rambo.Redis.RedisMessageStore
 
@@ -61,49 +62,24 @@ defmodule Rambo.Talk.MessageStore do
     end
   end
 
-  # def get_messages(room_id, opts \\ []) do
-  #   limit = Keyword.get(opts, :limit, 20)
-  #   pk = "room:#{room_id}"
-
-  #   ExAws.Dynamo.query(@table,
-  #     key_condition_expression: "pk = :pk",
-  #     expression_attribute_values: [pk: pk],
-  #     limit: limit,
-  #     scan_index_forward: true
-  #   )
-  #   |> ExAws.request()
-  #   |> case do
-  #     {:ok, %{"Items" => items}} ->
-  #       parsed_items = Enum.map(items, &parse_dynamo_item/1)
-  #       {:ok, parsed_items}
-
-  #     error ->
-  #       error
-  #   end
-  # end
-
   # 안읽은 메시지갯수 가져오는 함수
-  def get_unread_message_count(room, last_read_key) do
-    Logger.info("""
-    📝 채팅방 정보
-    room #{(inspect(room))}"
-    last_read_key #{(inspect(last_read_key))}"
-    """)
-
+  def get_unread_message_count(room, user_id,last_read_key) do
     {:ok, room_max_seq} = RedisMessageStore.get_room_max_sequence(room.id)
-
-    room_max_seq = room_max_seq
-    Logger.info("room_max_seq: #{room_max_seq}")
-
+    redis_room_user_key = "room:#{room.id}#user:#{user_id}"
 
     # redis에 있으면 redis에서 가져오고 없으면 rdb값보고 ddb조회해서 가져오기
-    case last_read_key do
-      nil -> 1
-      message_id ->
-        # ddb 에서 gsi써서 해당 메시지의 seq 가져오기
-        {:ok, last_read_msg_seq} = DynamoDbService.get_message_sequence(room.id, message_id)
+    redis_last_key = case RedisClient.get(redis_room_user_key) do
+      {:ok, nil} ->
+        last_read_key
+        {:ok, value} ->
+          value
+        end
 
-        Logger.info("GSI 쿼리 결과: #{inspect(last_read_msg_seq)}")
+    case redis_last_key do
+      nil -> room_max_seq # 없으면 모두 안읽었다고 생각하고 최대 시퀀스 가져오기
+      message_id ->
+        {:ok, last_read_msg_seq} = DynamoDbService.get_message_sequence(room.id, message_id)
+        Logger.info("GSI 쿼리 결과: message_id: #{message_id} seq: #{inspect(last_read_msg_seq)}")
         room_max_seq - last_read_msg_seq
     end
   end

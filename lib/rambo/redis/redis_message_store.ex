@@ -9,6 +9,7 @@ defmodule Rambo.Redis.RedisMessageStore do
 
   # 유저의 마지막 읽은 메시지 정보 만료 시간 (1시간)
   @ttl_seconds 3600
+  @redis_room_max_sequence_key "room_max_sequence"
 
   def redis_room_max_sequence_key, do: @redis_room_max_sequence_key
 
@@ -26,7 +27,7 @@ defmodule Rambo.Redis.RedisMessageStore do
     else
       case DynamoDbService.fetch_max_sequence_from_dynamo(room_id) do
         {:ok, max_sequence} ->
-          RedisClient.set(key, to_string(max_sequence + 1))
+          RedisClient.set(key, to_string(max_sequence))
         error -> error
       end
     end
@@ -50,11 +51,11 @@ defmodule Rambo.Redis.RedisMessageStore do
   end
 
   @doc """
-  방의 최대 메시지 sequence를 조회합니다.
-  Redis에 없는 경우 DynamoDB에서 최근 메시지의 sequence를 조회합니다.
+  방의 최대 메시지 sequence를 조회
+  Redis에 없는 경우 DynamoDB에서 최근 메시지의 sequence를 조회
   """
   def get_room_max_sequence(room_id) do
-    key = "#{@redis_room_max_sequence_key}:#{room_id}"
+    key = "#{redis_room_max_sequence_key()}:#{room_id}"
 
     case RedisClient.get(key) do
       {:ok, nil} ->

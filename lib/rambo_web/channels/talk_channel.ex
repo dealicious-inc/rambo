@@ -49,8 +49,9 @@ defmodule RamboWeb.TalkChannel do
           name: room.name,
           sequence: max_sequence + 1
         }
-        Rambo.Talk.MessageStore.store_message(item)
+        {:ok, item} = Rambo.Talk.MessageStore.store_message(item)
         RedisMessageStore.update_room_max_sequence(room_id)
+        RedisMessageStore.update_user_last_read(room_id, user_id, item.message_id)
 
         # TODO 여기 부터 확인 필요
         case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do

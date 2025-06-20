@@ -4,10 +4,12 @@ defmodule Rambo.TalkRoomService do
   """
   require Logger
 
+  alias ElixirSense.Log
   alias Rambo.Repo
   alias Rambo.TalkRoom
   alias Rambo.TalkRoomUser
   alias Rambo.Ddb.DynamoDbService
+  alias Rambo.Redis.RedisMessageStore
   import Ecto.Query
 
   ## 1. 채팅방 생성
@@ -34,12 +36,13 @@ defmodule Rambo.TalkRoomService do
     |> Repo.all()
   end
 
-  ## 4. 마지막으로 읽은 메시지 기록
+  ## 4. 마지막으로 읽은 메시지 기록 (redis에)
   def mark_as_read(talk_room_id, user_id, last_read_key) do
     from(u in TalkRoomUser,
       where: u.talk_room_id == ^talk_room_id and u.user_id == ^user_id
     )
-    |> Repo.update_all(set: [last_read_message_key: last_read_key])
+    # |> Repo.update_all(set: [last_read_message_key: last_read_key]) # 메시지 읽을때마다 RDB업뎃 해줄수 없음
+    RedisMessageStore.update_user_last_read(talk_room_id, user_id, last_read_key)
   end
 
   ## 5. 1:1 채팅방 찾거나 생성
@@ -97,7 +100,7 @@ defmodule Rambo.TalkRoomService do
     |> Enum.map(fn {room, last_read_key} ->
 
       unread_count =
-        case Rambo.Talk.MessageStore.get_unread_message_count(room, last_read_key) do
+        case Rambo.Talk.MessageStore.get_unread_message_count(room, user_id, last_read_key) do
           count -> count
         end
         Logger.info("unread_count: #{unread_count}")
@@ -120,7 +123,7 @@ defmodule Rambo.TalkRoomService do
   end
 
   def get_latest_message_id(room_id) do
-    case DynamoDbService.get_messages(room_id, limit: 1) do
+    case DynamoDbService.get_messages(room_id, limit: 1, sort_order: :desc) do
       {:ok, [latest | _]} -> {:ok, latest.message_id}
       _ -> {:ok, nil}
     end
