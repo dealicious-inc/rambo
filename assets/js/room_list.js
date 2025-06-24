@@ -1,9 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
     const roomList = document.getElementById("room-list")
+    const params = new URLSearchParams(window.location.search);
 
     if (!roomList) {
         console.warn("room-list 요소가 없습니다.")
         return
+    }
+
+    const userId = parseInt(params.get("userId"));
+    if (!userId) {
+        alert("❗ URL에 userId 쿼리 파라미터가 필요합니다. 예: /chat?userId=1");
+        return;
     }
 
     // 서버에서 방 목록 가져오기
@@ -23,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 li.style.textDecoration = "underline"
 
                 li.addEventListener("click", () => {
-                    window.location.href = `/chat?room_id=${room.id}&room_name=${encodeURIComponent(room.name)}`
+                    window.location.href = `/chat?room_id=${room.id}&room_name=${encodeURIComponent(room.name)}&userId=${userId}`
                 })
 
                 roomList.appendChild(li)

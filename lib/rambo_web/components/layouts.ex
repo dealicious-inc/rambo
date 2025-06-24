@@ -9,6 +9,5 @@ defmodule RamboWeb.Layouts do
   `use RamboWeb, :live_view`.
   """
   use RamboWeb, :html
-
   embed_templates "layouts/*"
 end

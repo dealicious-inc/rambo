@@ -5,9 +5,16 @@
       <root url="file://$PROJECT_DIR$/_build/dev/lib/myxql/ebin" />
       <root url="file://$PROJECT_DIR$/_build/dev/lib/myxql/ebin" />
       <root url="file://$PROJECT_DIR$/_build/dev/lib/myxql/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/myxql/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/myxql/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/myxql/ebin" />
+      <root url="file://$PROJECT_DIR$/_build/dev/lib/myxql/ebin" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
+      <root url="file://$PROJECT_DIR$/deps/myxql/lib" />
+      <root url="file://$PROJECT_DIR$/deps/myxql/lib" />
+      <root url="file://$PROJECT_DIR$/deps/myxql/lib" />
       <root url="file://$PROJECT_DIR$/deps/myxql/lib" />
       <root url="file://$PROJECT_DIR$/deps/myxql/lib" />
     </SOURCES>

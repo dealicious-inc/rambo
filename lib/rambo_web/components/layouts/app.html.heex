@@ -1,48 +1,40 @@
-<!DOCTYPE html>
-<html lang="en" class="[--scroll-mt:9.8rem] lg:[--scroll-mt:6.3rem]">
-  <head>
-    <meta charset="utf-g" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title suffix=" · Rambo">
-      <%= assigns[:page_title] || "Rambo" %>
-    </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
-    </script>
-  </head>
-  <body class="bg-white antialiased">
-    <header class="px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
-        <div class="flex items-center gap-4">
-          <a href="/">
-            <img src={~p"/images/logo.svg"} width="36" />
-          </a>
-          <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">
-            v<%= Application.spec(:phoenix, :vsn) %>
-          </p>
-        </div>
-        <div class="flex items-center gap-4 font-semibold leading-6 text-zinc-900">
-          <a href="https://twitter.com/elixirphoenix" class="hover:text-zinc-700">
-            @elixirphoenix
-          </a>
-          <a href="https://github.com/phoenixframework/phoenix" class="hover:text-zinc-700">
-            GitHub
-          </a>
-          <a
-            href="https://hexdocs.pm/phoenix/overview.html"
-            class="rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80"
-          >
-            Get Started <span aria-hidden="true">&rarr;</span>
-          </a>
-        </div>
+<body>
+  <header class="px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between border-b border-zinc-100 py-3 text-sm">
+      <div class="flex items-center gap-4">
+        <a href="/">
+          <img src={~p"/images/logo.svg"} width="36" />
+        </a>
+        <p class="bg-brand/5 text-brand rounded-full px-2 font-medium leading-6">
+          v{Application.spec(:phoenix, :vsn)}
+        </p>
       </div>
-    </header>
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl">
-        <.flash_group flash={@flash} />
-        <%= @inner_content %>
+      <div class="flex items-center gap-4 font-semibold leading-6 text-zinc-900">
+        <a href="https://twitter.com/elixirphoenix" class="hover:text-zinc-700">@elixirphoenix</a>
+        <a href="https://github.com/phoenixframework/phoenix" class="hover:text-zinc-700">GitHub</a>
+        <a href="https://hexdocs.pm/phoenix/overview.html" class="rounded-lg bg-zinc-100 px-2 py-1 hover:bg-zinc-200/80">
+          Get Started <span aria-hidden="true">&rarr;</span>
+        </a>
       </div>
-    </main>
-  </body>
-</html>
+    </div>
+  </header>
+
+  <main class="px-4 py-20 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl">
+      <.flash_group flash={@flash} />
+      {@inner_content}
+    </div>
+  </main>
+
+  <%= if @page == :lobby do %>
+    <script src={~p"/assets/lobby.js"}></script>
+  <% end %>
+
+  <%= if @page == :chat do %>
+    <script src={~p"/assets/chat.js"}></script>
+  <% end %>
+
+  <%= if @page == :room_list do %>
+    <script src={~p"/assets/room_list.js"}></script>
+  <% end %>
+</body>
