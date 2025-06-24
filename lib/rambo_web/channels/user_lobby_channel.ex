@@ -55,7 +55,7 @@ defmodule RamboWeb.UserLobbyChannel do
 
     Logger.info("bodyzzzz: #{inspect(body)}")
     case Jason.decode(body) do
-      {:ok, %{"room_id" => _room_ddb_id}} ->
+      {:ok, %{"pk" => _room_ddb_id}} ->
         Logger.info("📩 NATS message received → refreshing room list")
         send(self(), :after_join)
 

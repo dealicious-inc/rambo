@@ -55,7 +55,6 @@ defmodule Rambo.Talk.MessageStore do
       {:ok, _} ->
         Logger.info("✅ 저장완료")
         {:ok, item}
-
       error ->
         Logger.error("🚨 실패 #{inspect(error)}")
         error

@@ -36,10 +36,9 @@ defmodule RamboWeb.TalkChannel do
 
     Logger.info("톡채널 #{room_id}")
     with {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(room_id) do
+      {:ok, max_sequence} = RedisMessageStore.get_room_max_sequence(room_id)
 
-        {:ok, max_sequence} = RedisMessageStore.get_room_max_sequence(room_id)
-
-        Logger.info("max_sequence: #{max_sequence}")
+      Logger.info("max_sequence: #{max_sequence}")
       # ddb insert
          item = %{
           room_id: room_id,
@@ -52,21 +51,22 @@ defmodule RamboWeb.TalkChannel do
         {:ok, item} = case Rambo.Talk.MessageStore.store_message(item) do
           {:ok, item} ->
             RedisMessageStore.update_room_max_sequence(room_id)
-            RedisMessageStore.update_user_last_read(room_id, user_id, item.message_id)
+            RedisMessageStore.update_user_last_read(room_id, user_id, item["message_id"])
             {:ok, item}
           error ->
             Logger.error("❌ Failed to store message: #{inspect(error)}")
             error
         end
 
-        Logger.info("메시지 옴 max_sequence: #{max_sequence} 방 번호: #{room_id} 유저 번호: #{user_id} 메시지: #{message} 시간: #{timestamp} 메시지 아이디: #{item.message_id} 메시지 시퀀스: #{item.sequence}")
-        case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
-          {:ok, _} ->
-            IO.puts("NATS 전송 성공")
+      case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
+        :ok ->
+          Logger.info("NATS 전송 성공")
+          {:reply, :ok, socket}  # 성공 시 응답
         {:error, err} ->
           IO.inspect(err, label: "❌ Failed to publish to NATS")
           push(socket, "error", %{error: "Message stored but publish failed"})
-        end
+          {:noreply, socket}  # 에러 시 응답
+      end
     else
       error ->
         IO.inspect(error, label: "❌ Failed to store message or update activity")
@@ -99,7 +99,6 @@ defmodule RamboWeb.TalkChannel do
   # 이벤트를 수신했을 때 호출되는 콜백
   def handle_info({:msg, %{body: body}}, socket) do
     case Jason.decode(body) do
-
       {:ok, %{"message_id" => mid, "sender_id" => sid} = payload} ->
         push(socket, "new_msg", payload)
 
