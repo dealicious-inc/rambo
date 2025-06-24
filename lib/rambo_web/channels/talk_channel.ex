@@ -49,11 +49,17 @@ defmodule RamboWeb.TalkChannel do
           name: room.name,
           sequence: max_sequence + 1
         }
-        {:ok, item} = Rambo.Talk.MessageStore.store_message(item)
-        RedisMessageStore.update_room_max_sequence(room_id)
-        RedisMessageStore.update_user_last_read(room_id, user_id, item.message_id)
+        {:ok, item} = case Rambo.Talk.MessageStore.store_message(item) do
+          {:ok, item} ->
+            RedisMessageStore.update_room_max_sequence(room_id)
+            RedisMessageStore.update_user_last_read(room_id, user_id, item.message_id)
+            {:ok, item}
+          error ->
+            Logger.error("❌ Failed to store message: #{inspect(error)}")
+            error
+        end
 
-        # TODO 여기 부터 확인 필요
+        Logger.info("메시지 옴 max_sequence: #{max_sequence} 방 번호: #{room_id} 유저 번호: #{user_id} 메시지: #{message} 시간: #{timestamp} 메시지 아이디: #{item.message_id} 메시지 시퀀스: #{item.sequence}")
         case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
           {:ok, _} ->
             IO.puts("NATS 전송 성공")

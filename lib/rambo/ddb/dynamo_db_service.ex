@@ -32,7 +32,7 @@ defmodule Rambo.Ddb.DynamoDbService do
   @typedoc """
   @spec get_message_sequence(String.t(), String.t()) :: {:ok, integer()} | {:error, any()}
   """
-  def get_message_sequence(room_id, message_id) do
+  def get_message_sequence(room_id, message_id) when is_binary(message_id) and message_id != "" do
     pk = "room:#{room_id}"
 
     ExAws.Dynamo.query(@table,
@@ -54,6 +54,8 @@ defmodule Rambo.Ddb.DynamoDbService do
       error -> error
     end
   end
+
+  def get_message_sequence(_room_id, _message_id), do: {:ok, 0}
 
   # ddb에서 room_id로 최대 sequence 조회
   @typedoc """

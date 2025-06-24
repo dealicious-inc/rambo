@@ -4,7 +4,6 @@ defmodule Rambo.TalkRoomService do
   """
   require Logger
 
-  alias ElixirSense.Log
   alias Rambo.Repo
   alias Rambo.TalkRoom
   alias Rambo.TalkRoomUser
@@ -98,7 +97,6 @@ defmodule Rambo.TalkRoomService do
 
     Repo.all(query)
     |> Enum.map(fn {room, last_read_key} ->
-
       unread_count =
         case Rambo.Talk.MessageStore.get_unread_message_count(room, user_id, last_read_key) do
           count -> count

@@ -14,25 +14,42 @@ defmodule Rambo.Redis.RedisMessageStore do
 
   def redis_room_max_sequence_key, do: @redis_room_max_sequence_key
 
-  @doc """
-  방의 최대 메시지 sequence를 Redis에 저장
-  """
-  def update_room_max_sequence(room_id) do
-    key = "#{@redis_room_max_sequence_key}:#{room_id}"
-    Logger.debug("방 최대 메시지 순번 업데이트: #{key}")
-    if RedisClient.exists?(key) do
-      case RedisClient.incr(key) do
-        {:ok, _} -> :ok
-        error -> error
-      end
+@doc """
+방의 최대 메시지 sequence를 Redis에 저장
+
+## Returns
+
+  * :ok - 성공
+  * {:error, :redis_incr_failed} - Redis incr 작업 실패
+  * {:error, :redis_set_failed} - Redis set 작업 실패
+  * {:error, :dynamo_fetch_failed} - DynamoDB 조회 실패
+  * {:error, reason} - 기타 에러
+"""
+def update_room_max_sequence(room_id) do
+  key = "#{@redis_room_max_sequence_key}:#{room_id}"
+
+  if RedisClient.exists?(key) do
+    case RedisClient.incr(key) do
+      {:ok, _} -> :ok
+      error ->
+        Logger.error("Redis incr 실패 - room_id: #{room_id}, error: #{inspect(error)}")
+        {:error, :redis_incr_failed}
+    end
+  else
+    with {:ok, max_sequence} <- DynamoDbService.fetch_max_sequence_from_dynamo(room_id),
+         {:ok, _} <- RedisClient.set(key, to_string(max_sequence)) do
+      update_room_max_sequence(room_id)
     else
-      case DynamoDbService.fetch_max_sequence_from_dynamo(room_id) do
-        {:ok, max_sequence} ->
-          RedisClient.set(key, to_string(max_sequence))
-        error -> error
-      end
+      error ->
+        Logger.error("방 최대 sequence 초기화 실패 - room_id: #{room_id}, error: #{inspect(error)}")
+        case error do
+          {:error, :dynamo_error} -> {:error, :dynamo_fetch_failed}
+          _ -> {:error, :redis_set_failed}
+        end
     end
   end
+end
+
 
   @doc """
   특정 유저가 특정 방에서 마지막으로 읽은 메시지 정보를 Redis에 저장
@@ -74,6 +91,7 @@ defmodule Rambo.Redis.RedisMessageStore do
         DynamoDbService.fetch_max_sequence_from_dynamo(room_id)
 
       {:ok, value} ->
+        Logger.info("Redis에 있으면 Redis에서 조회")
         {:ok, String.to_integer(value)}
 
       error ->

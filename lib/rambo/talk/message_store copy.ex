@@ -67,6 +67,13 @@ defmodule Rambo.Talk.MessageStore do
     {:ok, room_max_seq} = RedisMessageStore.get_room_max_sequence(room.id)
     redis_room_user_key = "room:#{room.id}#user:#{user_id}"
 
+    Logger.info("--------------------------------")
+    Logger.info("room: #{room.id} - id 방")
+    Logger.info("redis_room_user_key: #{redis_room_user_key}")
+    Logger.info("last_read_key: #{inspect(last_read_key)}")
+    Logger.info("room_max_seq: #{room_max_seq}")
+    Logger.info("--------------------------------")
+
     # redis에 있으면 redis에서 가져오고 없으면 rdb값보고 ddb조회해서 가져오기
     redis_last_key = case RedisClient.get(redis_room_user_key) do
       {:ok, nil} ->
