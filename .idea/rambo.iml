@@ -177,5 +177,6 @@
     <orderEntry type="library" name="jetstream" level="project" />
     <orderEntry type="library" name="broadway" level="project" />
     <orderEntry type="library" name="redix" level="project" />
+    <orderEntry type="library" name="redix" level="project" />
   </component>
 </module>

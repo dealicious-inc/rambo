@@ -37,4 +37,18 @@ defmodule Rambo.Nats.RoomSubscriber do
 
     {:noreply, state}
   end
+
+  def subscribe_user_count(room_id) do
+    subject = "room.#{room_id}.count_updated"
+    Rambo.Nats.subscribe(subject, fn msg ->
+      case Jason.decode(msg.body) do
+        {:ok, %{"count" => count}} ->
+          RamboWeb.Endpoint.broadcast!("room:#{room_id}", "user_count", %{count: count})
+
+        _ ->
+          IO.puts("❌ [user_count] Invalid NATS message: #{msg.body}")
+      end
+    end)
+  end
+
 end

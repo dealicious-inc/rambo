@@ -6,6 +6,7 @@ defmodule RamboWeb.RoomChannel do
   def join("room:" <> room_id, %{"user_id" => user_id}, socket) do
     room_id = String.to_integer(room_id)
     user_id = String.to_integer("#{user_id}")
+    Rambo.Nats.RoomSubscriber.subscribe_user_count(room_id)
 
     socket =
       socket
@@ -21,9 +22,8 @@ defmodule RamboWeb.RoomChannel do
     user_id = socket.assigns.user_id
 
     :ok = track_user_in_redis(room_id, user_id)
-    count = get_user_count(room_id)
+    publish_user_count(room_id)
 
-    broadcast!(socket, "user_count", %{count: count})
     {:noreply, socket}
   end
 
@@ -32,10 +32,20 @@ defmodule RamboWeb.RoomChannel do
     user_id = socket.assigns.user_id
 
     remove_user_from_redis(room_id, user_id)
+    publish_user_count(room_id)
+
+    :ok
+  end
+
+  defp publish_user_count(room_id) do
     count = get_user_count(room_id)
 
-    broadcast!(socket, "user_count", %{count: count})
-    :ok
+    payload = %{
+      "room_id" => room_id,
+      "count" => count
+    }
+
+    Rambo.Nats.publish("room.#{room_id}.count_updated", payload)
   end
 
   defp track_user_in_redis(room_id, user_id) do
@@ -94,5 +104,16 @@ defmodule RamboWeb.RoomChannel do
         push(socket, "error", %{"reason" => "Failed to find room", "details" => inspect(reason)})
         {:noreply, socket}
     end
+  end
+
+  def handle_info({:msg, %{topic: "room." <> _rest, body: body}}, socket) do
+    case Jason.decode(body) do
+      {:ok, %{"count" => count}} ->
+        push(socket, "user_count", %{count: count})
+      _ ->
+        IO.puts("❌ [RoomChannel] Invalid user_count payload: #{body}")
+    end
+
+    {:noreply, socket}
   end
 end

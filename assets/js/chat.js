@@ -59,6 +59,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (label) label.innerText = `👥 ${payload.count}명 참여 중`;
     });
 
+    const roomName = urlParams.get("room_name")
+    const roomNameLabel = document.getElementById("room-name")
+
+    if (roomName && roomNameLabel) {
+        roomNameLabel.innerText = decodeURIComponent(roomName)
+        roomNameLabel.style.fontSize = "20px"
+    }
     // 메시지 전송 함수 (클릭 + 엔터에서 같이 사용)
     function sendMessage() {
         const message = input.value
