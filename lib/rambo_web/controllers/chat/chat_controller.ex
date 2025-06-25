@@ -13,6 +13,6 @@ defmodule RamboWeb.ChatController do
   end
 
   def lobby(conn, _params) do
-    render(conn, "lobby.html")
+    render(conn, "lobby.html", page: "lobby")
   end
 end
