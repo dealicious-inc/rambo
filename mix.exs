@@ -53,7 +53,11 @@ defmodule Rambo.MixProject do
       {:elixir_uuid, "~> 1.2"},
       {:tzdata, "~> 1.1"},
       {:timex, "~> 3.7"},
-      {:jetstream, "~> 0.0.9"}
+      {:jetstream, "~> 0.0.9"},
+      {:redix, "~> 1.5"},
+      {:uuid, "~> 1.1"},
+      {:phoenix_live_reload, "~> 1.4", only: :dev},
+      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev}
     ]
   end
 

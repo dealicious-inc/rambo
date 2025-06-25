@@ -1,5 +1,6 @@
 defmodule Rambo.Nats.RoomSubscriber do
   use GenServer
+  require Logger
 
   def start_link(room_id) do
     IO.inspect({:start_link, room_id}, label: "RoomSubscriber")
@@ -25,7 +26,7 @@ defmodule Rambo.Nats.RoomSubscriber do
 
   def handle_info({:msg, %{topic: full_topic, body: body}}, state) do
     case Jason.decode(body) do
-      {:ok, %{"message" => _msg, "user" => _user} = payload} ->
+      {:ok, %{"content" => _msg, "sender_id" => _user} = payload} ->
         IO.inspect({:received, full_topic, payload}, label: "RoomSubscriber")
 
         room = state.room_id |> to_string()

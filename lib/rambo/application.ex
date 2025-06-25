@@ -15,6 +15,8 @@ defmodule Rambo.Application do
       {Finch, name: Rambo.Finch},
       RamboWeb.Endpoint,
       Rambo.Repo,
+      {Redix, name: Rambo.Redis},
+      Rambo.Redis.ExpiryHandler,
       %{
         id: Rambo.Nats.Connection,
         start: {Rambo.Nats.Connection, :start_link, [[]]},

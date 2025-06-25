@@ -1,4 +1,4 @@
-defmodule Rambo.Talk.MessageStore do
+defmodule Rambo.Talk.MessageStore2 do
   @moduledoc "DynamoDB에 채팅 메시지를 저장하고 조회하는 모듈"
 
   @table "talk_messages"
