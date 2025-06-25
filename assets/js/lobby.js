@@ -159,6 +159,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (talkChannel) talkChannel.leave();
         chatRoom.style.display = "none";
         chatLobby.style.display = "block";
+        
+        // 로비로 돌아갈 때 room_list를 다시 요청하여 unread count 업데이트
+        lobbyChannel.push(`user_lobby:${userId}`, {});
     });
 
 });
