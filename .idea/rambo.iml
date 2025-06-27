@@ -178,5 +178,8 @@
     <orderEntry type="library" name="broadway" level="project" />
     <orderEntry type="library" name="redix" level="project" />
     <orderEntry type="library" name="redix" level="project" />
+    <orderEntry type="library" name="uuid" level="project" />
+    <orderEntry type="library" name="makeup_diff" level="project" />
+    <orderEntry type="library" name="file_system" level="project" />
   </component>
 </module>

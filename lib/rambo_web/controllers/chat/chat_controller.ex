@@ -9,7 +9,7 @@ defmodule RamboWeb.ChatController do
   end
 
   def rooms(conn, _params) do
-    render(conn, "room.html")
+    render(conn, "room.html", page: :group_chat_list)
   end
 
   def lobby(conn, _params) do

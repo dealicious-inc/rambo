@@ -34,7 +34,6 @@ defmodule RamboWeb.UserLobbyChannel do
       TalkRoomService.participate_list(user_id)
       |> Enum.sort_by(& &1.last_activity_at || DateTime.from_unix!(0), {:desc, DateTime})
       |> Enum.map(fn room ->
-        Logger.info("요기 room #{(inspect(room))}")
         %{
           id: room.id,
           name: room.name,
@@ -43,7 +42,6 @@ defmodule RamboWeb.UserLobbyChannel do
         }
       end)
 
-    Logger.info("이것이 방 목록 rooms #{(inspect(rooms))}")
     push(socket, "room_list", %{rooms: rooms})
     {:noreply, socket}
   end
@@ -52,8 +50,6 @@ defmodule RamboWeb.UserLobbyChannel do
   # 안읽은 카운트 읽어주기
   # after_join
   def handle_info({:msg, %{body: body}}, socket) do
-
-    Logger.info("bodyzzzz: #{inspect(body)}")
     case Jason.decode(body) do
       {:ok, %{"pk" => _room_ddb_id}} ->
         Logger.info("📩 NATS message received → refreshing room list")

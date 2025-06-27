@@ -85,7 +85,7 @@ defmodule RamboWeb.RoomChannel do
           "created_at" => created_at
         }
 
-        case ExAws.Dynamo.put_item("messages", item) |> ExAws.request() do
+        case ExAws.Dynamo.put_item("live_messages", item) |> ExAws.request() do
           {:ok, _result} ->
             payload = %{
               "user" => user_id,
