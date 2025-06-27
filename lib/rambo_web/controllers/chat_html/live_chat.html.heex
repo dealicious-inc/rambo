@@ -1,14 +1,23 @@
 <!-- live_chat.html.heex -->
-
-<div id="live-chat">
-  <div id="room-info" style="margin: 20px;">
-    <div id="room-name" style="font-weight: bold; font-size: 20px;">채팅방 이름</div>
-    <div id="user-count" style="font-weight: bold;">👥 0명 참여 중</div>
+<div id="live-chat" style="max-width: 600px; margin: 40px auto; padding: 20px;">
+  <div id="room-info" style="margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div id="room-name" style="font-weight: bold; font-size: 20px;">채팅방 이름</div>
+      <button id="back-button" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; background-color: #f8f8f8; cursor: pointer;">
+        목록으로
+      </button>
+    </div>
+    <div id="user-count" style="font-weight: bold; margin-top: 6px;">👥 0명 참여 중</div>
   </div>
 
-  <ul id="messages"></ul>
+  <ul id="messages" style="min-height: 300px; list-style: none; padding: 0; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 20px; padding: 10px;"></ul>
 
-  <input type="text" id="message-input" placeholder="Type your message">
-  <button id="send-button">Send</button>
-  <button id="back-button">방 목록으로 돌아가기</button>
+  <div style="display: flex; gap: 8px;">
+    <input type="text" id="message-input" placeholder="Type your message"
+      style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" />
+    <button id="send-button"
+      style="padding: 10px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+      Send
+    </button>
+  </div>
 </div>
