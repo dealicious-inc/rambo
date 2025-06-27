@@ -33,15 +33,16 @@ body {
 }
 
 /* 채팅방 이름 + 안읽음 영역 */
-.room-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+#room-info {
+    margin: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
 }
 
-.room-name {
+#room-name {
     font-weight: bold;
-    font-size: 16px;
+    font-size: 22px;
+    margin-bottom: 4px;
 }
 
 .room-unread {
@@ -130,4 +131,43 @@ body {
 
 #send-button:hover {
     background-color: #1565c0;
+}
+
+#back-button {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#back-button:hover {
+    background-color: #e0e0e0;
+}
+
+.back-btn {
+    padding: 6px 14px;
+    font-size: 14px;
+    border: 1px solid #3b82f6;
+    background-color: white;
+    color: #3b82f6;
+    border-radius: 6px;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.back-btn:hover {
+    background-color: #3b82f6;
+    color: white;
+}
+
+#user-count {
+    font-weight: normal;
+    font-size: 14px;
+    color: #555;
 }
