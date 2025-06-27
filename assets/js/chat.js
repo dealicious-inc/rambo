@@ -58,11 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
         messageList.appendChild(li)
     })
 
-    channel.on("user_count", payload => {
-        const label = document.getElementById("user-count");
-        if (label) label.innerText = `👥 ${payload.count}명 참여 중`;
-    });
-
     const roomName = urlParams.get("room_name")
     const roomNameLabel = document.getElementById("room-name")
 

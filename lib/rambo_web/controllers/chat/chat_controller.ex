@@ -16,7 +16,7 @@ defmodule RamboWeb.ChatController do
     user = %{id: 1, name: "TestUser"}
     render(conn, "live_chat.html",
       page: :live_chat,
-      layout: {RamboWeb.Layouts, :app},  # ← 이걸로 변경
+      layout: {RamboWeb.Layouts, :app},
       current_user: user
     )
   end

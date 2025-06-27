@@ -96,7 +96,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     input.addEventListener("compositionend", () => {
         isComposing = false;
-        sendMessage();
     });
 
     input.addEventListener("keydown", (event) => {

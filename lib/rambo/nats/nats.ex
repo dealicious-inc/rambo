@@ -10,7 +10,6 @@ defmodule Rambo.Nats do
     }
 
     encoded = Jason.encode!(payload)
-    IO.inspect({:publishing_to, @topic_prefix <> room}, label: "🔥 NATS PUBLISH")
 
     Gnat.pub(:gnat, @topic_prefix <> room, encoded)
   end
@@ -39,7 +38,6 @@ defmodule Rambo.Nats do
   # 룸 참여자 카운트
   def publish(topic, payload) when is_binary(topic) and is_map(payload) do
     encoded = Jason.encode!(payload)
-    IO.inspect({:publishing_to, topic}, label: "🔥 NATS PUBLISH (generic)")
 
     Gnat.pub(:gnat, topic, encoded)
   end
