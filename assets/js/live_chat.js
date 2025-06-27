@@ -1,16 +1,16 @@
 import {Socket} from "phoenix"
 
 document.addEventListener("DOMContentLoaded", () => {
-    const root = document.querySelector("#chat-root")
-    if (!root) return
-    console.log("✅ chat.js 실행됨")
     const urlParams = new URLSearchParams(window.location.search)
+    const root = document.querySelector("#live-chat")
+    if (!root) return
+    console.log("✅ live_chat.js 실행됨")
     const roomId = urlParams.get("room_id")
     const userId = urlParams.get("userId");
 
     // room_id가 없으면 실행하지 않음 (예: /rooms 페이지)
     if (!roomId) {
-        console.log("room_id 없음 → chat.js 실행 안함")
+        console.log("room_id 없음 → live_chat.js 실행 안함")
         return
     }
 
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 채널 연결
     const channel = socket.channel(`room:${roomId}`, { user_id: userId })
     channel.join()
-        .receive("ok", resp => {
+        .receive("ok", () => {
             console.log("Joining channel with:", { user_id: userId })
         })
         .receive("error", resp => {
@@ -54,9 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // 메시지 수신
     channel.on("new_msg", payload => {
         const li = document.createElement("li")
-        li.textContent = `${payload.user}: ${payload.content} (${payload.timestamp})`
+        li.textContent = `${payload.user}: ${payload.message} (${payload.timestamp})`
         messageList.appendChild(li)
     })
+
+    channel.on("user_count", payload => {
+        const label = document.getElementById("user-count");
+        if (label) label.innerText = `👥 ${payload.count}명 참여 중`;
+    });
 
     const roomName = urlParams.get("room_name")
     const roomNameLabel = document.getElementById("room-name")
@@ -70,9 +75,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const message = input.value
         if (message.trim() === "") return
 
-        channel.push("new_msg", {
+        channel.push("send_live_msg", {
             id: roomId,
-            user: userId,  // 유저 ID는 필요하면 동적으로 바꿀 수 있음
+            user: userId,
             message: message
         })
 
@@ -91,7 +96,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     input.addEventListener("compositionend", () => {
         isComposing = false;
-        sendMessage();
     });
 
     input.addEventListener("keydown", (event) => {
@@ -102,70 +106,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 })
 
-let Chat = {
-  init(socket, element) {
-    // ... (init 함수 윗부분은 변경 없음)
-
-    this.renderMessages(messages)
-  },
-
-  renderMessages(messages) {
-    const loggedInUserId = document.body.dataset.userId; // 현재 로그인한 사용자 ID 가져오기
-
-    let messagesHTML = messages.map(msg => {
-      const isMine = msg.sender_id.toString() === loggedInUserId;
-      const messageClass = isMine ? 'mine' : 'others';
-
-      return `
-        <div class="message-box ${messageClass}">
-          <div>
-            <div class="sender-name">${this.formatSender(msg.sender_id, isMine)}</div>
-            <div class="message-content">
-              ${msg.content}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    this.messagesContainer.innerHTML = messagesHTML;
-    this.scrollToBottom();
-  },
-
-  renderMessage(msg) {
-    const loggedInUserId = document.body.dataset.userId;
-    const isMine = msg.sender_id.toString() === loggedInUserId;
-    const messageClass = isMine ? 'mine' : 'others';
-
-    let template = `
-      <div class="message-box ${messageClass}">
-        <div>
-          <div class="sender-name">${this.formatSender(msg.sender_id, isMine)}</div>
-          <div class="message-content">
-            ${msg.content}
-          </div>
-        </div>
-      </div>
-    `;
-
-    this.messagesContainer.insertAdjacentHTML('beforeend', template);
-    this.scrollToBottom();
-  },
-
-  formatSender(senderId, isMine) {
-    if (isMine) {
-      return "You";
-    }
-    // 실제 애플리케이션에서는 senderId를 사용해 사용자 이름을 조회해야 합니다.
-    // 여기서는 예시로 "User" + ID를 사용합니다.
-    return `User ${senderId}`;
-  },
-
-  scrollToBottom() {
-    this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-  },
-
-  // ... (다른 함수들은 변경 없음)
-}
-
-export default Chat;

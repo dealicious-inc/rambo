@@ -30,7 +30,7 @@ defmodule Rambo.Application do
       },
       {Registry, keys: :unique, name: Rambo.Nats.RoomRegistry},
       {DynamicSupervisor, strategy: :one_for_one, name: Rambo.Nats.RoomSupervisor},
-      {Phoenix.PubSub, name: Rambo.PubSub}
+      {Phoenix.PubSub, name: Rambo.PubSub},
     ]
 
     opts = [strategy: :one_for_one, name: Rambo.Supervisor]

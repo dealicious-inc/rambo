@@ -20,6 +20,7 @@ defmodule RamboWeb.Router do
     get "/", PageController, :home
     get "/chat", ChatController, :index
     get "/rooms", ChatController, :rooms
+    get "/live_chat", ChatController, :live_chat
     get "/lobby", ChatController, :lobby
   end
 

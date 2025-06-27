@@ -15,8 +15,6 @@ defmodule Rambo.Nats.RoomSubscriber do
     topic = "#{room_id}"
 
     IO.inspect({:init, topic}, label: "RoomSubscriber")
-
-    # 구독 + listen 등록
     {:ok, subscription_pid} = Rambo.Nats.subscribe_and_listen(self(), topic)
 
     IO.inspect({:subscribed, topic, subscription_pid}, label: "RoomSubscriber")
@@ -26,11 +24,11 @@ defmodule Rambo.Nats.RoomSubscriber do
 
   def handle_info({:msg, %{topic: full_topic, body: body}}, state) do
     case Jason.decode(body) do
-      {:ok, %{"content" => _msg, "sender_id" => _user} = payload} ->
+      {:ok, %{"message" => _msg, "user" => _user} = payload} ->
         IO.inspect({:received, full_topic, payload}, label: "RoomSubscriber")
 
         room = state.room_id |> to_string()
-        RamboWeb.Endpoint.broadcast("room:" <> room, "new_msg", payload)
+        RamboWeb.Endpoint.broadcast("room:" <> room, "receive_live_msg", payload)
 
       _ ->
         IO.puts("Received invalid JSON message: #{inspect(body)}")
@@ -38,4 +36,18 @@ defmodule Rambo.Nats.RoomSubscriber do
 
     {:noreply, state}
   end
+
+  def subscribe_user_count(room_id) do
+    subject = "room.#{room_id}.count_updated"
+    Rambo.Nats.subscribe(subject, fn msg ->
+      case Jason.decode(msg.body) do
+        {:ok, %{"count" => count}} ->
+          RamboWeb.Endpoint.broadcast!("room:#{room_id}", "user_count", %{count: count})
+
+        _ ->
+          IO.puts("❌ [user_count] Invalid NATS message: #{msg.body}")
+      end
+    end)
+  end
+
 end

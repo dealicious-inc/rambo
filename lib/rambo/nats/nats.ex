@@ -1,5 +1,6 @@
 defmodule Rambo.Nats do
   @topic_prefix "chat.room."
+  require Logger
 
   def publish(room, %{"user" => user, "message" => message}) do
     payload = %{
@@ -9,13 +10,27 @@ defmodule Rambo.Nats do
     }
 
     encoded = Jason.encode!(payload)
-    IO.inspect({:publishing_to, @topic_prefix <> room}, label: "🔥 NATS PUBLISH")
 
     Gnat.pub(:gnat, @topic_prefix <> room, encoded)
   end
 
+  # 룸 참여자 카운트
+  def publish(topic, payload) when is_binary(topic) and is_map(payload) do
+    encoded = Jason.encode!(payload)
+
+    Gnat.pub(:gnat, topic, encoded)
+  end
+
   def subscribe(room) do
     Gnat.sub(:gnat, self(), @topic_prefix <> room)
+  end
+
+  # 룸참여자 구독
+  def subscribe(subject, handler_fn) do
+    Gnat.sub(:gnat, self(), subject)
+
+    # 별도 listener spawn
+    spawn(fn -> listen_loop(handler_fn) end)
   end
 
   def listen_loop do
@@ -34,6 +49,17 @@ defmodule Rambo.Nats do
         listen_loop()
     end
   end
+
+  # 룸참여자 구독 루프
+  defp listen_loop(handler_fn) do
+    receive do
+      {:msg, msg} ->
+        handler_fn.(msg)
+    end
+
+    listen_loop(handler_fn)
+  end
+
 
   def subscribe_and_listen(pid, room) do
     topic = @topic_prefix <> room

@@ -9,7 +9,16 @@ defmodule RamboWeb.ChatController do
   end
 
   def rooms(conn, _params) do
-    render(conn, "room.html")
+    render(conn, "room.html", page: :room_list)
+  end
+
+  def live_chat(conn, _params) do
+    user = %{id: 1, name: "TestUser"}
+    render(conn, "live_chat.html",
+      page: :live_chat,
+      layout: {RamboWeb.Layouts, :app},
+      current_user: user
+    )
   end
 
   def lobby(conn, _params) do

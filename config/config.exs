@@ -55,6 +55,11 @@ config :esbuild,
 
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
+config :rambo, :redix,
+       name: :redix,
+       host: "localhost",
+       port: 6379
+
 config :tailwind,
   version: "3.4.1",
   default: [

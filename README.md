@@ -29,13 +29,11 @@ iex -S mix
 ```
 
 ## local ddb 설정
-```angular2html
-
-```
-
+실시간 채팅
 ```angular2html
 aws dynamodb create-table \
---table-name talk_messages \
+--endpoint-url http://localhost:8000 \
+--table-name live_messages \
 --attribute-definitions \
 AttributeName=id,AttributeType=S \
 AttributeName=message_id,AttributeType=S \
@@ -43,12 +41,9 @@ AttributeName=message_id,AttributeType=S \
 AttributeName=id,KeyType=HASH \
 AttributeName=message_id,KeyType=RANGE \
 --billing-mode PAY_PER_REQUEST \
---endpoint-url http://localhost:8000 \
 --region ap-northeast-2
 ```
-
-
--- 테이블 설계 변경필요 논의사항
+단체방 채팅
 ```shell
 aws dynamodb create-table \
 --endpoint-url http://localhost:8000 \

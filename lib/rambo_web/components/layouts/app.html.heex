@@ -35,6 +35,11 @@
   <% end %>
 
   <%= if @page == :room_list do %>
-    <script src={~p"/assets/room_list.js"}></script>
+    <script src={~p"/assets/live_room_list.js"}></script>
   <% end %>
+
+  <%= if @page == :live_chat do %>
+      <script src={~p"/assets/live_chat.js"}></script>
+  <% end %>
+
 </body>

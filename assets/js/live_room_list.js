@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const userId = parseInt(params.get("userId"));
     if (!userId) {
-        alert("❗ URL에 userId 쿼리 파라미터가 필요합니다. 예: /chat?userId=1");
+        alert("❗ URL에 userId 쿼리 파라미터가 필요합니다. 예: /live_chat?userId=1");
         return;
     }
 
@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 li.style.textDecoration = "underline"
 
                 li.addEventListener("click", () => {
-                    window.location.href = `/chat?room_id=${room.id}&room_name=${encodeURIComponent(room.name)}&userId=${userId}`
+                    window.location.href = `/live_chat?room_id=${room.id}&room_name=${encodeURIComponent(room.name)}&userId=${userId}`
                 })
 
                 roomList.appendChild(li)
