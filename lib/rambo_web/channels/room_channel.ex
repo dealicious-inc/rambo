@@ -28,6 +28,17 @@ defmodule RamboWeb.RoomChannel do
     {:noreply, socket}
   end
 
+  def handle_info({:msg, %{topic: "room." <> _rest, body: body}}, socket) do
+    case Jason.decode(body) do
+      {:ok, %{"count" => count}} ->
+        push(socket, "user_count", %{count: count})
+      _ ->
+        IO.puts("❌ [RoomChannel] Invalid user_count payload: #{body}")
+    end
+
+    {:noreply, socket}
+  end
+
   def terminate(_reason, socket) do
     room_id = socket.assigns.room_id
     user_id = socket.assigns.user_id
@@ -105,16 +116,5 @@ defmodule RamboWeb.RoomChannel do
         push(socket, "error", %{"reason" => "Failed to find room", "details" => inspect(reason)})
         {:noreply, socket}
     end
-  end
-
-  def handle_info({:msg, %{topic: "room." <> _rest, body: body}}, socket) do
-    case Jason.decode(body) do
-      {:ok, %{"count" => count}} ->
-        push(socket, "user_count", %{count: count})
-      _ ->
-        IO.puts("❌ [RoomChannel] Invalid user_count payload: #{body}")
-    end
-
-    {:noreply, socket}
   end
 end

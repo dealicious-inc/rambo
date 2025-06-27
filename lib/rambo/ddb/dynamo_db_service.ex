@@ -29,8 +29,12 @@ defmodule Rambo.Ddb.DynamoDbService do
   end
 
   # ddb에서 message_id로 메시지 sequence 조회
-  @typedoc """
-  @spec get_message_sequence(String.t(), String.t()) :: {:ok, integer()} | {:error, any()}
+  @doc """
+  Gets the message sequence number from Redis.
+
+  ## Example
+      iex> get_message_sequence("room:1", "user:2")
+      {:ok, 123}
   """
   def get_message_sequence(room_id, message_id) when is_binary(message_id) and message_id != "" do
     pk = "room:#{room_id}"
@@ -57,9 +61,12 @@ defmodule Rambo.Ddb.DynamoDbService do
 
   def get_message_sequence(_room_id, _message_id), do: {:ok, 0}
 
-  # ddb에서 room_id로 최대 sequence 조회
-  @typedoc """
-  @spec fetch_max_sequence_from_dynamo(String.t()) :: {:ok, integer()} | {:error, any()}
+  @doc """
+  DynamoDB에서 주어진 room_id로 최대 메시지 시퀀스를 조회합니다.
+
+  ## Examples
+      iex> fetch_max_sequence_from_dynamo("room:1")
+      {:ok, 123}
   """
   def fetch_max_sequence_from_dynamo(room_id) do
     Logger.info("pk: room:#{room_id} 다이나모에서 최대 seq 찾기 시작 #{room_id}")

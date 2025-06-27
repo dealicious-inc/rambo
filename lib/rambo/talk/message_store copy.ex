@@ -4,7 +4,6 @@ defmodule Rambo.Talk.MessageStore do
   @table "messages"
 
   require Logger
-  alias Rambo.Repo
   alias Rambo.RedisClient
   alias Rambo.Ddb.DynamoDbService
   alias Rambo.Redis.RedisMessageStore
@@ -91,10 +90,10 @@ defmodule Rambo.Talk.MessageStore do
   end
 
 
-  defp get_ddb_id_from_sql(room_id) do
-    case Repo.get(Rambo.TalkRoom, room_id) do
-      nil -> nil
-      room -> room.ddb_id
-    end
-  end
+#  defp get_ddb_id_from_sql(room_id) do
+#    case Repo.get(Rambo.TalkRoom, room_id) do
+#      nil -> nil
+#      room -> room.ddb_id
+#    end
+#  end
 end

@@ -14,8 +14,23 @@ defmodule Rambo.Nats do
     Gnat.pub(:gnat, @topic_prefix <> room, encoded)
   end
 
+  # 룸 참여자 카운트
+  def publish(topic, payload) when is_binary(topic) and is_map(payload) do
+    encoded = Jason.encode!(payload)
+
+    Gnat.pub(:gnat, topic, encoded)
+  end
+
   def subscribe(room) do
     Gnat.sub(:gnat, self(), @topic_prefix <> room)
+  end
+
+  # 룸참여자 구독
+  def subscribe(subject, handler_fn) do
+    Gnat.sub(:gnat, self(), subject)
+
+    # 별도 listener spawn
+    spawn(fn -> listen_loop(handler_fn) end)
   end
 
   def listen_loop do
@@ -35,20 +50,7 @@ defmodule Rambo.Nats do
     end
   end
 
-  # 룸 참여자 카운트
-  def publish(topic, payload) when is_binary(topic) and is_map(payload) do
-    encoded = Jason.encode!(payload)
-
-    Gnat.pub(:gnat, topic, encoded)
-  end
-
-  def subscribe(subject, handler_fn) do
-    Gnat.sub(:gnat, self(), subject)
-
-    # 별도 listener spawn
-    spawn(fn -> listen_loop(handler_fn) end)
-  end
-
+  # 룸참여자 구독 루프
   defp listen_loop(handler_fn) do
     receive do
       {:msg, msg} ->
