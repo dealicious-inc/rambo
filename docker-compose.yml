@@ -27,6 +27,17 @@ services:
       - "8222:8222"
     volumes:
       - nats_data:/data
+  
+  redis:
+    container_name: rambo-redis
+    hostname: redis
+    image: redis:latest
+    command: redis-server --notify-keyspace-events Ex
+    labels:
+      - "name=redis"
+      - "mode=standalone"
+    ports:
+      - 6379:6379
 
 volumes:
   db_data:

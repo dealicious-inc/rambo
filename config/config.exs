@@ -59,6 +59,18 @@ config :rambo, :redix,
        name: :redix,
        host: "localhost",
        port: 6379
+
+config :tailwind,
+  version: "3.4.1",
+  default: [
+    args: ~w(
+      --config=tailwind.config.js
+      --input=css/app.css
+      --output=../priv/static/assets/app.css
+    ),
+    cd: Path.expand("../assets", __DIR__)
+  ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

@@ -1,0 +1,37 @@
+<div id="chat-lobby">
+  <div class="lobby-container">
+    <div class="lobby-header">
+      <h1>채팅 로비</h1>
+      <p>참여 중인 대화 목록입니다.</p>
+    </div>
+
+    <ul id="room-list">
+      <!-- 채팅방 목록이 여기에 동적으로 추가됩니다. -->
+    </ul>
+  </div>
+</div>
+
+<div id="chat-room" style="display: none;">
+  <div id="chat-container" class="chat-container">
+    <div class="chat-header">
+      <h2 id="room-title"></h2>
+    </div>
+    <div id="messages" class="messages-list">
+      <!-- 메시지들이 여기에 동적으로 추가됩니다. -->
+    </div>
+    <form id="message-input-form" class="message-input-form">
+      <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off" />
+      <button type="submit" id="send-button">전송</button>
+    </form>
+  </div>
+</div>
+
+<div class="new-room-form">
+  <h2>새로운 채팅방 만들기</h2>
+  <form id="new-room-form">
+    <div class="form-group">
+      <input type="text" id="new-room-name" placeholder="채팅방 이름을 입력하세요" required />
+      <button id="create-room-button" type="submit">만들기</button>
+    </div>
+  </form>
+</div> 

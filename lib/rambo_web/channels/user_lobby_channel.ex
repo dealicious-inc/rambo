@@ -1,6 +1,6 @@
 defmodule RamboWeb.UserLobbyChannel do
   use Phoenix.Channel
-
+  require Logger
   alias Rambo.TalkRoomService
 
   def join("user_lobby:" <> user_id_str, _params, socket) do
@@ -34,28 +34,34 @@ defmodule RamboWeb.UserLobbyChannel do
       TalkRoomService.participate_list(user_id)
       |> Enum.sort_by(& &1.last_activity_at || DateTime.from_unix!(0), {:desc, DateTime})
       |> Enum.map(fn room ->
+        Logger.info("요기 room #{(inspect(room))}")
         %{
           id: room.id,
           name: room.name,
-          unread_count: room.unread_count,
-          last_read_key: Map.get(room, :last_read_message_key)
+          unread_count: room.unread_count || 0,
+          last_read_key: room.last_read_message_key,
         }
       end)
 
+    Logger.info("이것이 방 목록 rooms #{(inspect(rooms))}")
     push(socket, "room_list", %{rooms: rooms})
     {:noreply, socket}
   end
 
   # 메시지를 수신했을 때 방 목록을 다시 push
+  # 안읽은 카운트 읽어주기
+  # after_join
   def handle_info({:msg, %{body: body}}, socket) do
+
+    Logger.info("bodyzzzz: #{inspect(body)}")
     case Jason.decode(body) do
-      {:ok, %{"id" => _room_ddb_id}} ->
-        IO.puts("📩 NATS message received → refreshing room list")
+      {:ok, %{"pk" => _room_ddb_id}} ->
+        Logger.info("📩 NATS message received → refreshing room list")
         send(self(), :after_join)
 
       {:ok, %{"type" => "invitation", "room_id" => _, "to_user_id" => user_id}} ->
         if socket.assigns.user_id == user_id do
-          IO.puts("📨 초대 메시지 수신 → 방 목록 갱신")
+          Logger.info("📨 초대 메시지 수신 → 방 목록 갱신")
           send(self(), :after_join)
         end
 

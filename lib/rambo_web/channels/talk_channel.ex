@@ -3,6 +3,10 @@ defmodule RamboWeb.TalkChannel do
 
   alias Rambo.TalkRoomService
   alias Rambo.Talk.Subscriber
+  alias Rambo.Redis.RedisMessageStore
+  alias Rambo.Ddb.DynamoDbService
+
+  require Logger
 
   def join("talk:" <> room_id_str, %{"user_id" => user_id_str}, socket) do
     with {room_id, _} <- Integer.parse(room_id_str),
@@ -25,27 +29,43 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
+
   def handle_in("new_msg", %{"user" => user_id, "message" => message}, socket) do
     room_id = socket.assigns.room_id
+    timestamp = System.system_time(:millisecond)
 
-    with {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(room_id),
-         {:ok, item} <- Rambo.Talk.MessageStore.store_message(%{
-           room_id: "#{room_id}",
-           sender_id: user_id,
-           message: message,
-           name: room.name,
-           ddb_id: room.ddb_id
-         }),
-         :ok <- TalkRoomService.touch_activity(room_id) do
+    Logger.info("톡채널 #{room_id}")
+    with {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(room_id) do
+      {:ok, max_sequence} = RedisMessageStore.get_room_max_sequence(room_id)
+
+      Logger.info("max_sequence: #{max_sequence}")
+      # ddb insert
+         item = %{
+          room_id: room_id,
+          timestamp: timestamp,
+          sender_id: user_id,
+          content: message,
+          name: room.name,
+          sequence: max_sequence + 1
+        }
+        {:ok, item} = case Rambo.Talk.MessageStore.store_message(item) do
+          {:ok, item} ->
+            RedisMessageStore.update_room_max_sequence(room_id)
+            RedisMessageStore.update_user_last_read(room_id, user_id, item["message_id"])
+            {:ok, item}
+          error ->
+            Logger.error("❌ Failed to store message: #{inspect(error)}")
+            error
+        end
 
       case Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(item)) do
         :ok ->
-          {:noreply, socket}
-
-        err ->
+          Logger.info("NATS 전송 성공")
+          {:reply, :ok, socket}  # 성공 시 응답
+        {:error, err} ->
           IO.inspect(err, label: "❌ Failed to publish to NATS")
           push(socket, "error", %{error: "Message stored but publish failed"})
-          {:noreply, socket}
+          {:noreply, socket}  # 에러 시 응답
       end
     else
       error ->
@@ -65,7 +85,7 @@ defmodule RamboWeb.TalkChannel do
   def handle_in("fetch_messages", _payload, socket) do
     room_id = socket.assigns.room_id
 
-    case Rambo.Talk.MessageStore.get_messages(room_id) do
+    case DynamoDbService.get_messages(room_id) do
       {:ok, messages} ->
         push(socket, "messages", %{messages: messages})
         {:noreply, socket}
@@ -76,21 +96,7 @@ defmodule RamboWeb.TalkChannel do
     end
   end
 
-  # 과거 메시지 더 불러오기
-  def handle_in("load_more", %{"last_seen_key" => last_key}, socket) do
-    room_id = socket.assigns.room_id
-    IO.puts("불러옴불러옴")
-    case Rambo.Talk.MessageStore.get_messages(room_id, last_seen_key: last_key) do
-      {:ok, messages} ->
-        push(socket, "messages:prepend", %{messages: messages})
-        {:noreply, socket}
-
-      _ ->
-        push(socket, "messages:prepend", %{messages: []})
-        {:noreply, socket}
-    end
-  end
-
+  # 이벤트를 수신했을 때 호출되는 콜백
   def handle_info({:msg, %{body: body}}, socket) do
     case Jason.decode(body) do
       {:ok, %{"message_id" => mid, "sender_id" => sid} = payload} ->

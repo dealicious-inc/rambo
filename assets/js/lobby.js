@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
             div.innerHTML = `
         <div class="room-info">
           <span class="room-name">${room.name}</span>
-          <span class="room-unread">${room.unread_count}</span>
+          <span class="room-unread">${room.unread_count || 0}</span>
         </div>
       `;
             div.addEventListener("click", () => enterRoom(room.id, room.name));
@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const div = document.createElement("div");
                 div.className = msg.sender_id === userId ? "message mine" : "message other";
-                div.innerHTML = `<div class="bubble">${msg.message}</div>`;
+                div.innerHTML = `<div class="bubble">${msg.content}</div>`;
                 messagesContainer.prepend(div);
             });
 
@@ -104,17 +104,42 @@ document.addEventListener("DOMContentLoaded", () => {
         const div = document.createElement("div");
         div.className = isMine ? "message mine" : "message other";
         div.innerHTML = `
-      <div class="bubble">
-        ${msg.message}
-      </div>
-    `;
+          <div class="message-content">
+            <div class="bubble">${msg.content}</div>
+            <div class="message-time">${formatTime(msg.sent_at)}</div>
+          </div>
+        `;
         messagesContainer.appendChild(div);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+    }
+
+    let isComposing = false;
+
+    // 한글 입력 시작
+    input.addEventListener("compositionstart", () => {
+        isComposing = true;
+    });
+
+    // 한글 입력 종료
+    input.addEventListener("compositionend", () => {
+        isComposing = false;
+    });
+
     sendButton.addEventListener("click", sendMessage);
     input.addEventListener("keydown", function (event) {
+        if (isComposing) return; // 한글 조합 중이면 무시
+
         if (event.key === "Enter") {
+            event.preventDefault();
             sendMessage();
         }
     });
@@ -134,6 +159,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (talkChannel) talkChannel.leave();
         chatRoom.style.display = "none";
         chatLobby.style.display = "block";
+        
+        // 로비로 돌아갈 때 room_list를 다시 요청하여 unread count 업데이트
+        lobbyChannel.push(`user_lobby:${userId}`, {});
     });
 
 });

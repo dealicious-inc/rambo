@@ -2,10 +2,13 @@ defmodule Rambo.TalkRoomService do
   @moduledoc """
   TalkRoom 생성, 참여, 읽음 처리 등 채팅방 관련 서비스 로직
   """
+  require Logger
 
   alias Rambo.Repo
   alias Rambo.TalkRoom
   alias Rambo.TalkRoomUser
+  alias Rambo.Ddb.DynamoDbService
+  alias Rambo.Redis.RedisMessageStore
   import Ecto.Query
 
   ## 1. 채팅방 생성
@@ -32,12 +35,13 @@ defmodule Rambo.TalkRoomService do
     |> Repo.all()
   end
 
-  ## 4. 마지막으로 읽은 메시지 기록
+  ## 4. 마지막으로 읽은 메시지 기록 (redis에)
   def mark_as_read(talk_room_id, user_id, last_read_key) do
     from(u in TalkRoomUser,
       where: u.talk_room_id == ^talk_room_id and u.user_id == ^user_id
     )
-    |> Repo.update_all(set: [last_read_message_key: last_read_key])
+    # |> Repo.update_all(set: [last_read_message_key: last_read_key]) # 메시지 읽을때마다 RDB업뎃 해줄수 없음
+    RedisMessageStore.update_user_last_read(talk_room_id, user_id, last_read_key)
   end
 
   ## 5. 1:1 채팅방 찾거나 생성
@@ -88,16 +92,16 @@ defmodule Rambo.TalkRoomService do
            join: m in TalkRoomUser,
            on: m.talk_room_id == r.id,
            where: m.user_id == ^user_id,
-           select: {r, m.last_read_message_key}
+           select: {r, m.last_read_message_key},
+           preload: :talk_room_users
 
     Repo.all(query)
     |> Enum.map(fn {room, last_read_key} ->
       unread_count =
-        case Rambo.Talk.MessageStore.count_messages_after("#{room.ddb_id}", last_read_key, user_id) do
-          {:ok, count} -> count
-          _ -> 0
+        case Rambo.Talk.MessageStore.get_unread_message_count(room, user_id, last_read_key) do
+          count -> count
         end
-
+        Logger.info("unread_count: #{unread_count}")
       %{
         id: room.id,
         name: room.name,
@@ -117,7 +121,7 @@ defmodule Rambo.TalkRoomService do
   end
 
   def get_latest_message_id(room_id) do
-    case Rambo.Talk.MessageStore.get_messages(room_id, limit: 1) do
+    case DynamoDbService.get_messages(room_id, limit: 1, sort_order: :desc) do
       {:ok, [latest | _]} -> {:ok, latest.message_id}
       _ -> {:ok, nil}
     end

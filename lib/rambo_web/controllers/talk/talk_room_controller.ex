@@ -28,13 +28,13 @@ defmodule RamboWeb.Api.TalkRoomController do
   # 채팅방 참여
   def join(conn, %{"id" => room_id, "user_id" => user_id}) do
     rid = if is_binary(room_id), do: String.to_integer(room_id), else: room_id
-    uid = if is_binary(user_id), do: String.to_integer(user_id), else: user_id
+    user_id = if is_binary(user_id), do: String.to_integer(user_id), else: user_id
 
-    case TalkRoomService.join_user(rid, uid) do
+    case TalkRoomService.join_user(rid, user_id) do
       {:ok, _} ->
         # ✅ 초대된 유저 개인 채널로 NATS 메시지 발행 → 로비에서 수신
-        payload = %{type: "invitation", room_id: rid, to_user_id: uid}
-        Rambo.Nats.JetStream.publish("talk.user.#{uid}", Jason.encode!(payload))
+        payload = %{type: "invitation", room_id: rid, to_user_id: user_id}
+        Rambo.Nats.JetStream.publish("talk.user.#{user_id}", Jason.encode!(payload))
         TalkRoomService.touch_activity(rid)
 
         json(conn, %{message: "joined"})
@@ -105,8 +105,8 @@ defmodule RamboWeb.Api.TalkRoomController do
     "last_read_key" => last_read_key
   }) do
     with {rid, _} <- Integer.parse(room_id),
-         uid <- parse_int(user_id),
-         {count, _} <- TalkRoomService.mark_as_read(rid, uid, last_read_key) do
+         user_id <- parse_int(user_id),
+         {count, _} <- TalkRoomService.mark_as_read(rid, user_id, last_read_key) do
       json(conn, %{updated: count})
     else
       _ -> conn |> put_status(:bad_request) |> json(%{error: "Failed to mark as read"})

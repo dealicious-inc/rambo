@@ -23,18 +23,36 @@ mix ecto.migrate
 mix deps.get
 ```
 
+### Elixir REPL 환경 안에서 프로젝트 코드를 확인하고 함수 테스트가 가능
+```shell
+iex -S mix
+```
+
 ## local ddb 설정
 ```angular2html
 aws dynamodb create-table \
 --endpoint-url http://localhost:8000 \
 --table-name messages \
 --attribute-definitions \
-AttributeName=id,AttributeType=S \
-AttributeName=message_id,AttributeType=S \
+  AttributeName=pk,AttributeType=S \
+  AttributeName=sk,AttributeType=S \
+  AttributeName=message_id,AttributeType=S \
 --key-schema \
-AttributeName=id,KeyType=HASH \
-AttributeName=message_id,KeyType=RANGE \
+  AttributeName=pk,KeyType=HASH \
+  AttributeName=sk,KeyType=RANGE \
 --billing-mode PAY_PER_REQUEST \
+--global-secondary-indexes '[
+  {
+    "IndexName": "message_id_gsi",
+    "KeySchema": [
+      { "AttributeName": "pk", "KeyType": "HASH" },
+      { "AttributeName": "message_id", "KeyType": "RANGE" }
+    ],
+    "Projection": {
+      "ProjectionType": "ALL"
+    }
+  }
+]' \
 --region ap-northeast-2
 ```
 
@@ -49,6 +67,35 @@ AttributeName=id,KeyType=HASH \
 AttributeName=message_id,KeyType=RANGE \
 --billing-mode PAY_PER_REQUEST \
 --endpoint-url http://localhost:8000 \
+--region ap-northeast-2
+```
+
+
+-- 테이블 설계 변경필요 논의사항
+```shell
+aws dynamodb create-table \
+--endpoint-url http://localhost:8000 \
+--table-name messages \
+--attribute-definitions \
+  AttributeName=pk,AttributeType=S \
+  AttributeName=sk,AttributeType=S \
+  AttributeName=message_id,AttributeType=S \
+--key-schema \
+  AttributeName=pk,KeyType=HASH \
+  AttributeName=sk,KeyType=RANGE \
+--billing-mode PAY_PER_REQUEST \
+--global-secondary-indexes '[
+  {
+    "IndexName": "message_id_gsi",
+    "KeySchema": [
+      { "AttributeName": "pk", "KeyType": "HASH" },
+      { "AttributeName": "message_id", "KeyType": "RANGE" }
+    ],
+    "Projection": {
+      "ProjectionType": "ALL"
+    }
+  }
+]' \
 --region ap-northeast-2
 ```
 

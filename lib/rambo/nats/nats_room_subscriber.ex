@@ -1,5 +1,6 @@
 defmodule Rambo.Nats.RoomSubscriber do
   use GenServer
+  require Logger
 
   def start_link(room_id) do
     IO.inspect({:start_link, room_id}, label: "RoomSubscriber")

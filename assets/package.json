@@ -8,7 +8,9 @@
   "dependencies": {
     "phoenix": "^1.7.21",
     "phoenix_html": "^3.3.0",
-    "phoenix_live_view": "^0.19.0"
+    "phoenix_live_view": "^0.19.0",
+    "@tailwindcss/forms": "^0.5.7",
+    "tailwindcss": "^3.4.1"
   },
   "devDependencies": {
     "esbuild": "^0.18.0"
