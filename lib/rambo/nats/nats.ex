@@ -2,9 +2,10 @@ defmodule Rambo.Nats do
   @topic_prefix "chat.room."
   require Logger
 
-  def publish(room, %{"user" => user, "message" => message}) do
+  def publish(room, %{"user_id" => user_id, "user_name" => user_name, "message" => message}) do
     payload = %{
-      user: user,
+      user_id: user_id,
+      user_name: user_name,
       message: message,
       timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
     }
@@ -37,10 +38,10 @@ defmodule Rambo.Nats do
     receive do
       {:msg, %{topic: full_topic, body: body}} ->
         case Jason.decode(body) do
-          {:ok, %{"message" => msg, "user" => user} = payload} ->
+          {:ok, %{"message" => msg, "user_id" => user_id, "user_name" => user_name} = payload} ->
             "chat.room." <> room = full_topic
             RamboWeb.Endpoint.broadcast("room:" <> room, "new_msg", payload)
-            IO.puts("[#{user}] #{msg}")
+            IO.puts("[#{user_id}][#{user_name}] #{msg}")
 
           _ ->
             IO.puts("Received invalid JSON message: #{inspect(body)}")

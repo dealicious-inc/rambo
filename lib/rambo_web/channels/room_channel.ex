@@ -81,7 +81,7 @@ defmodule RamboWeb.RoomChannel do
     end
   end
 
-  def handle_in("send_live_msg", %{"id" => room_id, "user" => user_id, "message" => content}, socket) do
+  def handle_in("send_live_msg", %{"id" => room_id, "user_id" => user_id, "user_name" => user_name, "message" => content}, socket) do
     timestamp = DateTime.now!("Asia/Seoul") |> DateTime.truncate(:second)
     created_at = DateTime.to_iso8601(timestamp)
     message_id = "MSG##{System.system_time(:millisecond)}"
@@ -100,7 +100,8 @@ defmodule RamboWeb.RoomChannel do
         case ExAws.Dynamo.put_item("live_messages", item) |> ExAws.request() do
           {:ok, _result} ->
             payload = %{
-              "user" => user_id,
+              "user_id" => user_id,
+              "user_name" => user_name,
               "message" => content,
               "timestamp" => created_at
             }
