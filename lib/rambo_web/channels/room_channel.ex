@@ -93,6 +93,7 @@ defmodule RamboWeb.RoomChannel do
           "message_id" => message_id,
           "chat_room_id" => to_string(room_id),
           "sender_id" => to_string(user_id),
+          "user_name" => user_name,
           "content" => content,
           "created_at" => created_at
         }

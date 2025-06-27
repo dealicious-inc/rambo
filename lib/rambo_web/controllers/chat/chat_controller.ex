@@ -12,7 +12,7 @@ defmodule RamboWeb.ChatController do
   def live_chat(conn, _params) do
     render(conn, "live_chat.html",
       page: :live_chat,
-      layout: false,
+      layout: false
     )
   end
 
