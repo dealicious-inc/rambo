@@ -12,6 +12,14 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("❗ URL에 userId 쿼리 파라미터가 필요합니다. 예: /live_chat?userId=1");
         return;
     }
+    const userMap = {
+        1: "김조순",
+        2: "이조순",
+        3: "나조순",
+        4: "박조순"
+    }
+
+    const userName = userMap[userId] || `사용자${userId}`
 
     // 서버에서 방 목록 가져오기
     fetch("/api/rooms")
@@ -30,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 li.style.textDecoration = "underline"
 
                 li.addEventListener("click", () => {
-                    window.location.href = `/live_chat?room_id=${room.id}&room_name=${encodeURIComponent(room.name)}&userId=${userId}`
+                    window.location.href = `/live_chat?room_id=${room.id}&room_name=${encodeURIComponent(room.name)}&userId=${userId}&userName=${encodeURIComponent(userName)}`
                 })
 
                 roomList.appendChild(li)

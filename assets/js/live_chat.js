@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("✅ live_chat.js 실행됨")
     const roomId = urlParams.get("room_id")
     const userId = urlParams.get("userId");
+    const userName = urlParams.get("userName");
 
     // room_id가 없으면 실행하지 않음 (예: /rooms 페이지)
     if (!roomId) {
@@ -52,9 +53,23 @@ document.addEventListener("DOMContentLoaded", () => {
         })
 
     // 메시지 수신
-    channel.on("new_msg", payload => {
+    channel.on("new_msg", (payload) => {
         const li = document.createElement("li")
-        li.textContent = `${payload.user}: ${payload.message} (${payload.timestamp})`
+
+        const messageText = document.createElement("span")
+        messageText.textContent = `${payload.user_name}: ${payload.message}`
+
+        const timeText = document.createElement("span")
+        const time = new Date(payload.timestamp)
+        const formatted = `${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
+        timeText.textContent = ` ${formatted}`
+        timeText.style.fontSize = "0.8em"
+        timeText.style.color = "gray"
+        timeText.style.marginLeft = "8px"
+
+        li.appendChild(messageText)
+        li.appendChild(timeText)
+
         messageList.appendChild(li)
     })
 
@@ -77,7 +92,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         channel.push("send_live_msg", {
             id: roomId,
-            user: userId,
+            user_id: userId,
+            user_name: userName,
             message: message
         })
 
