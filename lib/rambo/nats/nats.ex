@@ -1,5 +1,6 @@
 defmodule Rambo.Nats do
   @topic_prefix "chat.room."
+  require Logger
 
   def publish(room, %{"user" => user, "message" => message}) do
     payload = %{

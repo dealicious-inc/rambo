@@ -1,6 +1,7 @@
 defmodule RamboWeb.RoomChannel do
   use Phoenix.Channel
 
+  require Logger
   @expire_seconds 3600
 
   def join("room:" <> room_id, %{"user_id" => user_id}, socket) do
@@ -50,26 +51,26 @@ defmodule RamboWeb.RoomChannel do
 
   defp track_user_in_redis(room_id, user_id) do
     key = "room:#{room_id}:users"
-    Redix.command!(:redix, ["SADD", key, "#{user_id}"])
-    Redix.command!(:redix, ["EXPIRE", key, "#{@expire_seconds}"])
+    Redix.command!(Rambo.Redis, ["SADD", key, "#{user_id}"])
+    Redix.command!(Rambo.Redis, ["EXPIRE", key, "#{@expire_seconds}"])
     :ok
   end
 
   defp remove_user_from_redis(room_id, user_id) do
     key = "room:#{room_id}:users"
-    Redix.command!(:redix, ["SREM", key, "#{user_id}"])
+    Redix.command!(Rambo.Redis, ["SREM", key, "#{user_id}"])
     :ok
   end
 
   defp get_user_count(room_id) do
     key = "room:#{room_id}:users"
-    case Redix.command(:redix, ["SCARD", key]) do
+    case Redix.command(Rambo.Redis, ["SCARD", key]) do
       {:ok, count} -> count
       _ -> 0
     end
   end
 
-  def handle_in("new_msg", %{"id" => room_id, "user" => user_id, "message" => content}, socket) do
+  def handle_in("send_live_msg", %{"id" => room_id, "user" => user_id, "message" => content}, socket) do
     timestamp = DateTime.now!("Asia/Seoul") |> DateTime.truncate(:second)
     created_at = DateTime.to_iso8601(timestamp)
     message_id = "MSG##{System.system_time(:millisecond)}"

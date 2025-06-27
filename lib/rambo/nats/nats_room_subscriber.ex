@@ -15,8 +15,6 @@ defmodule Rambo.Nats.RoomSubscriber do
     topic = "#{room_id}"
 
     IO.inspect({:init, topic}, label: "RoomSubscriber")
-
-    # 구독 + listen 등록
     {:ok, subscription_pid} = Rambo.Nats.subscribe_and_listen(self(), topic)
 
     IO.inspect({:subscribed, topic, subscription_pid}, label: "RoomSubscriber")
@@ -30,7 +28,7 @@ defmodule Rambo.Nats.RoomSubscriber do
         IO.inspect({:received, full_topic, payload}, label: "RoomSubscriber")
 
         room = state.room_id |> to_string()
-        RamboWeb.Endpoint.broadcast("room:" <> room, "new_msg", payload)
+        RamboWeb.Endpoint.broadcast("room:" <> room, "receive_live_msg", payload)
 
       _ ->
         IO.puts("Received invalid JSON message: #{inspect(body)}")
