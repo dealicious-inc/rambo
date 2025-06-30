@@ -24,7 +24,7 @@ defmodule Rambo.Nats.RoomSubscriber do
 
   def handle_info({:msg, %{topic: full_topic, body: body}}, state) do
     case Jason.decode(body) do
-      {:ok, %{"message" => _msg, "user_id" => user_id, "user_name" => user_name} = payload} ->
+      {:ok, %{"message" => _msg, "user_id" => _user_id, "user_name" => _user_name} = payload} ->
         IO.inspect({:received, full_topic, payload}, label: "RoomSubscriber")
 
         room = state.room_id |> to_string()
