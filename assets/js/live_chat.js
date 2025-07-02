@@ -1,94 +1,109 @@
 import {Socket} from "phoenix"
 
 document.addEventListener("DOMContentLoaded", () => {
-    const urlParams = new URLSearchParams(window.location.search)
     const root = document.querySelector("#live-chat")
     if (!root) return
-    console.log("✅ live_chat.js 실행됨")
+
+    const urlParams = new URLSearchParams(window.location.search)
     const roomId = urlParams.get("room_id")
-    const userId = urlParams.get("userId");
-    const userName = urlParams.get("userName");
+    const userId = urlParams.get("userId")
+    const userName = urlParams.get("userName")
+    const roomName = urlParams.get("room_name")
 
-    // room_id가 없으면 실행하지 않음 (예: /rooms 페이지)
-    if (!roomId) {
-        console.log("room_id 없음 → live_chat.js 실행 안함")
+    if (!roomId || !userId) {
+        console.warn("❌ room_id 또는 userId 누락됨")
         return
     }
 
-    if (!userId) {
-        console.error("userId 누락됨, 채널 join 불가")
-        return
-    }
-
+    // 🧭 뒤로가기 버튼
     const backButton = document.getElementById("back-button")
-    if (backButton && userId) {
+    if (backButton) {
         backButton.addEventListener("click", () => {
-            window.location.href = `/rooms?userId=${userId}`;
+            window.location.href = `/rooms?userId=${userId}`
         })
     }
 
-    // 채팅방 UI 요소 가져오기
+    // 🧾 채팅 UI 요소
     const messageList = document.getElementById("messages")
     const input = document.getElementById("message-input")
     const sendButton = document.getElementById("send-button")
 
-    // 이 3개 요소가 모두 있어야 실행 (혹시 빠졌을 경우 안전하게)
     if (!messageList || !input || !sendButton) {
-        console.log("필요한 채팅 UI 요소가 없음 → 실행 안함")
+        console.warn("❌ 필수 UI 요소 누락")
         return
     }
 
-    // 소켓 연결
+    // 💬 Socket 연결 및 채널 조인
     const socket = new Socket("/socket", {params: {userToken: "123"}})
     socket.connect()
 
-    // 채널 연결
-    const channel = socket.channel(`room:${roomId}`, { user_id: userId })
-    channel.join()
-        .receive("ok", () => {
-            console.log("Joining channel with:", { user_id: userId })
-        })
-        .receive("error", resp => {
-            console.error("❌ Unable to join", resp)
-        })
+    const channel = socket.channel(`room:${roomId}`, {
+        user_id: userId,
+        user_name: userName
+    })
 
-    // 메시지 수신
+    channel.join()
+        .receive("ok", () => console.log("✅ 채널 조인 완료"))
+        .receive("error", err => console.error("❌ 채널 조인 실패", err))
+
+    // 📥 메시지 수신 처리
     channel.on("new_msg", (payload) => {
         const li = document.createElement("li")
-
-        const messageText = document.createElement("span")
-        messageText.textContent = `${payload.user_name}: ${payload.message}`
-
-        const timeText = document.createElement("span")
+        const type = payload.type || "chat"
         const time = new Date(payload.timestamp)
         const formatted = `${time.getHours().toString().padStart(2, "0")}:${time.getMinutes().toString().padStart(2, "0")}`
-        timeText.textContent = ` ${formatted}`
-        timeText.style.fontSize = "0.8em"
-        timeText.style.color = "gray"
-        timeText.style.marginLeft = "8px"
 
-        li.appendChild(messageText)
-        li.appendChild(timeText)
+        if (type === "notice") {
+            li.textContent = `📢 ${payload.message}`
+            li.style.textAlign = "center"
+            li.style.fontWeight = "bold"
+            li.style.color = "#c0392b"
+        } else if (type === "system") {
+            li.textContent = payload.message
+            li.style.textAlign = "center"
+            li.style.fontStyle = "italic"
+            li.style.color = "gray"
+        } else {
+            const messageText = document.createElement("span")
+            messageText.textContent = `${payload.user_name}: ${payload.message}`
+
+            const timeText = document.createElement("span")
+            timeText.textContent = ` ${formatted}`
+            timeText.style.fontSize = "0.8em"
+            timeText.style.color = "gray"
+            timeText.style.marginLeft = "8px"
+
+            li.appendChild(messageText)
+            li.appendChild(timeText)
+        }
 
         messageList.appendChild(li)
     })
 
+    // 🙋 사용자 수 수신
     channel.on("user_count", payload => {
-        const label = document.getElementById("user-count");
-        if (label) label.innerText = `👥 ${payload.count}명 참여 중`;
-    });
+        const label = document.getElementById("user-count")
+        if (label) label.innerText = `👥 ${payload.count}명 참여 중`
+    })
 
-    const roomName = urlParams.get("room_name")
+    // 🚫 채팅 금지 알림
+    channel.on("ban_chat", payload => {
+        const li = document.createElement("li")
+        li.textContent = payload.reason || "채팅 제한 중입니다."
+        li.style.color = "red"
+        messageList.appendChild(li)
+    })
+
+    // 🏷️ 방 이름 표시
     const roomNameLabel = document.getElementById("room-name")
-
     if (roomName && roomNameLabel) {
         roomNameLabel.innerText = decodeURIComponent(roomName)
-        roomNameLabel.style.fontSize = "20px"
     }
-    // 메시지 전송 함수 (클릭 + 엔터에서 같이 사용)
+
+    // 📤 메시지 전송 함수
     function sendMessage() {
-        const message = input.value
-        if (message.trim() === "") return
+        const message = input.value.trim()
+        if (message === "") return
 
         channel.push("send_live_msg", {
             id: roomId,
@@ -100,25 +115,84 @@ document.addEventListener("DOMContentLoaded", () => {
         input.value = ""
     }
 
-    // 버튼 클릭 시 전송
+    // 전송 이벤트 연결
     sendButton.addEventListener("click", sendMessage)
+    let isComposing = false
 
-    // 엔터 입력 시 전송
-    let isComposing = false;
-
-    input.addEventListener("compositionstart", () => {
-        isComposing = true;
-    });
-
-    input.addEventListener("compositionend", () => {
-        isComposing = false;
-    });
-
-    input.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" && !isComposing) {
-            event.preventDefault();
-            sendMessage();
+    input.addEventListener("compositionstart", () => isComposing = true)
+    input.addEventListener("compositionend", () => isComposing = false)
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !isComposing) {
+            e.preventDefault()
+            sendMessage()
         }
-    });
-})
+    })
 
+    // 🛡️ 신고하기 UI 처리
+    const reportButton = document.getElementById("report-button")
+    const reportModal = document.getElementById("report-modal")
+    const closeModal = document.getElementById("close-report-modal")
+    const reportUserList = document.getElementById("report-user-list")
+
+    if (reportButton && reportModal && closeModal && reportUserList) {
+        reportButton.addEventListener("click", () => {
+            fetch(`/api/rooms/${roomId}/participate-users`)
+                .then(res => res.json())
+                .then(data => {
+                    reportUserList.innerHTML = ""
+                    data.users.forEach(user => {
+                        if (String(user.user_id) === String(userId)) return
+
+                        const li = document.createElement("li")
+                        li.style.marginBottom = "8px"
+
+                        const span = document.createElement("span")
+                        span.textContent = user.user_name
+                        span.style.marginRight = "8px"
+
+                        const btn = document.createElement("button")
+                        btn.textContent = "신고"
+                        Object.assign(btn.style, {
+                            padding: "2px 8px",
+                            backgroundColor: "#e74c3c",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer"
+                        })
+
+                        btn.addEventListener("click", () => {
+                            fetch("/api/rooms/ban-user", {
+                                method: "POST",
+                                headers: {"Content-Type": "application/json"},
+                                body: JSON.stringify({user_id: user.user_id})
+                            })
+                                .then(res => res.json())
+                                .then(() => {
+                                    alert("✅ 신고 완료: 5분간 채팅이 제한됩니다.")
+                                    reportModal.style.display = "none"
+                                })
+                                .catch(err => {
+                                    alert("❌ 신고 실패")
+                                    console.error(err)
+                                })
+                        })
+
+                        li.appendChild(span)
+                        li.appendChild(btn)
+                        reportUserList.appendChild(li)
+                    })
+
+                    reportModal.style.display = "block"
+                })
+                .catch(err => {
+                    alert("❌ 사용자 목록 불러오기 실패")
+                    console.error(err)
+                })
+        })
+
+        closeModal.addEventListener("click", () => {
+            reportModal.style.display = "none"
+        })
+    }
+})

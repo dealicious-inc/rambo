@@ -2,16 +2,12 @@ defmodule Rambo.Nats do
   @topic_prefix "chat.room."
   require Logger
 
-  def publish(room, %{"user_id" => user_id, "user_name" => user_name, "message" => message}) do
-    payload = %{
-      user_id: user_id,
-      user_name: user_name,
-      message: message,
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
-    }
+  def publish(room, %{"user_id" => _user_id, "user_name" => _user_name, "message" => _message} = payload) do
+    payload =
+      payload
+      |> Map.put_new("timestamp", DateTime.utc_now() |> DateTime.to_iso8601())
 
     encoded = Jason.encode!(payload)
-
     Gnat.pub(:gnat, @topic_prefix <> room, encoded)
   end
 
