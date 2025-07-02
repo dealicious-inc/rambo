@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     socket.connect()
 
     // 채널 연결
-    const channel = socket.channel(`room:${roomId}`, { user_id: userId })
+    const channel = socket.channel(`room:${roomId}`, { user_id: userId, user_name: userName })
     channel.join()
         .receive("ok", () => {
             console.log("Joining channel with:", { user_id: userId })
@@ -76,6 +76,20 @@ document.addEventListener("DOMContentLoaded", () => {
     channel.on("user_count", payload => {
         const label = document.getElementById("user-count");
         if (label) label.innerText = `👥 ${payload.count}명 참여 중`;
+    });
+
+    channel.on("system_msg", payload => {
+        const li = document.createElement("li");
+        li.textContent = payload.message;
+        li.style.color = "#888";
+        li.style.fontStyle = "italic";
+        li.style.fontSize = "14px";
+
+        const messageList = document.getElementById("messages");
+        if (messageList) {
+            messageList.appendChild(li);
+            messageList.scrollTop = messageList.scrollHeight; // 스크롤 자동 내려가기
+        }
     });
 
     const roomName = urlParams.get("room_name")

@@ -2,16 +2,12 @@ defmodule Rambo.Nats do
   @topic_prefix "chat.room."
   require Logger
 
-  def publish(room, %{"user_id" => user_id, "user_name" => user_name, "message" => message}) do
-    payload = %{
-      user_id: user_id,
-      user_name: user_name,
-      message: message,
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
-    }
+  def publish(room, %{"user_id" => user_id, "user_name" => user_name, "message" => message} = payload) do
+    payload =
+      payload
+      |> Map.put_new("timestamp", DateTime.utc_now() |> DateTime.to_iso8601())
 
     encoded = Jason.encode!(payload)
-
     Gnat.pub(:gnat, @topic_prefix <> room, encoded)
   end
 
@@ -39,15 +35,36 @@ defmodule Rambo.Nats do
       {:msg, %{topic: full_topic, body: body}} ->
         case Jason.decode(body) do
           {:ok, %{"message" => msg, "user_id" => user_id, "user_name" => user_name} = payload} ->
-            "chat.room." <> room = full_topic
-            RamboWeb.Endpoint.broadcast("room:" <> room, "new_msg", payload)
-            IO.puts("[#{user_id}][#{user_name}] #{msg}")
+            room = String.replace_prefix(full_topic, "chat.room.", "")
+
+            event =
+              case Map.get(payload, "system") do
+                true -> "system_msg"
+                _ -> "new_msg"
+              end
+
+            IO.inspect({:nats_received, full_topic, payload}, label: "🔥 NATS") # 👈 여기!
+
+            RamboWeb.Endpoint.broadcast("room:" <> room, event, payload)
 
           _ ->
             IO.puts("Received invalid JSON message: #{inspect(body)}")
         end
 
         listen_loop()
+    end
+  end
+
+  defp handle_chat_message(room, body) do
+    case Jason.decode(body) do
+      {:ok, %{"message" => msg, "user_id" => user_id, "user_name" => user_name} = payload} ->
+        event = if Map.get(payload, "system") == true, do: "system_msg", else: "new_msg"
+        RamboWeb.Endpoint.broadcast("room:" <> room, event, payload)
+
+        IO.puts("[#{user_id}][#{user_name}] #{msg}#{if Map.get(payload, "system"), do: " (system)", else: ""}")
+
+      _ ->
+        IO.puts("❌ Invalid JSON message: #{inspect(body)}")
     end
   end
 
