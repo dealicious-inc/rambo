@@ -2,7 +2,7 @@ defmodule Rambo.Nats do
   @topic_prefix "chat.room."
   require Logger
 
-  def publish(room, %{"user_id" => user_id, "user_name" => user_name, "message" => message} = payload) do
+  def publish(room, %{"user_id" => _user_id, "user_name" => _user_name, "message" => _message} = payload) do
     payload =
       payload
       |> Map.put_new("timestamp", DateTime.utc_now() |> DateTime.to_iso8601())
@@ -34,7 +34,7 @@ defmodule Rambo.Nats do
     receive do
       {:msg, %{topic: full_topic, body: body}} ->
         case Jason.decode(body) do
-          {:ok, %{"message" => msg, "user_id" => user_id, "user_name" => user_name} = payload} ->
+          {:ok, %{"message" => _msg, "user_id" => _user_id, "user_name" => _user_name} = payload} ->
             room = String.replace_prefix(full_topic, "chat.room.", "")
 
             event =
@@ -52,19 +52,6 @@ defmodule Rambo.Nats do
         end
 
         listen_loop()
-    end
-  end
-
-  defp handle_chat_message(room, body) do
-    case Jason.decode(body) do
-      {:ok, %{"message" => msg, "user_id" => user_id, "user_name" => user_name} = payload} ->
-        event = if Map.get(payload, "system") == true, do: "system_msg", else: "new_msg"
-        RamboWeb.Endpoint.broadcast("room:" <> room, event, payload)
-
-        IO.puts("[#{user_id}][#{user_name}] #{msg}#{if Map.get(payload, "system"), do: " (system)", else: ""}")
-
-      _ ->
-        IO.puts("❌ Invalid JSON message: #{inspect(body)}")
     end
   end
 
