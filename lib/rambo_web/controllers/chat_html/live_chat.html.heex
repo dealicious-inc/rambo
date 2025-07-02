@@ -1,11 +1,17 @@
-<!-- live_chat.html.heex -->
 <div id="live-chat" style="max-width: 600px; margin: 40px auto; padding: 20px;">
   <div id="room-info" style="margin-bottom: 20px;">
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <div id="room-name" style="font-weight: bold; font-size: 20px;">채팅방 이름</div>
-      <button id="back-button" style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; background-color: #f8f8f8; cursor: pointer;">
-        목록으로
-      </button>
+      <div style="display: flex; gap: 8px;">
+        <button id="report-button"
+          style="padding: 6px 12px; border: 1px solid #e74c3c; border-radius: 4px; background-color: #fbeaea; color: #c0392b; cursor: pointer;">
+          🚨 신고하기
+        </button>
+        <button id="back-button"
+          style="padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; background-color: #f8f8f8; cursor: pointer;">
+          목록으로
+        </button>
+      </div>
     </div>
     <div id="user-count" style="font-weight: bold; margin-top: 6px;">👥 0명 참여 중</div>
   </div>
@@ -20,4 +26,15 @@
       Send
     </button>
   </div>
+</div>
+
+<!-- 신고 모달 -->
+<div id="report-modal"
+  style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); width:300px; background:white; border:1px solid #ccc; padding:16px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:999;">
+  <h3 style="margin-bottom: 10px;">참여 중인 사용자</h3>
+  <ul id="report-user-list" style="list-style: none; padding: 0;"></ul>
+  <button id="close-report-modal"
+    style="margin-top: 12px; padding: 6px 12px; background-color: #f0f0f0; border: 1px solid #ccc; border-radius: 4px;">
+    닫기
+  </button>
 </div>
