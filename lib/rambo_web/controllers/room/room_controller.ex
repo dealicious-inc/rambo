@@ -32,7 +32,7 @@ defmodule RamboWeb.Api.RoomController do
     end
   end
 
-  def send_message(conn, %{"id" => room_id, "user" => user_id, "message" => content}) do
+  def send_message(conn, %{"id" => room_id, "user_id" => user_id, "user_name" => user_name, "message" => content, "type" => type}) do
     timestamp = DateTime.now!("Asia/Seoul") |> DateTime.truncate(:second)
     created_at = DateTime.to_iso8601(timestamp)
     message_id = "MSG##{System.system_time(:millisecond)}"
@@ -41,21 +41,24 @@ defmodule RamboWeb.Api.RoomController do
     case Rambo.Chat.ChatRoomService.get_room_by_id(room_id) do
       {:ok, room} ->
         item = %{
-          "id" => room.ddb_id,  # ddb_id 사용
+          "id" => room.ddb_id,
           "message_id" => message_id,
           "chat_room_id" => to_string(room_id),
           "sender_id" => to_string(user_id),
+          "user_name" => user_name,
           "content" => content,
+          "type" => type,
           "created_at" => created_at
         }
 
         # DynamoDB에 저장
-        case ExAws.Dynamo.put_item("messages", item) |> ExAws.request() do
+        case ExAws.Dynamo.put_item("live_messages", item) |> ExAws.request() do
           {:ok, _result} ->
-            # NATS에 메시지 발행
             payload = %{
-              "user" => user_id,
+              "user_id" => user_id,
+              "user_name" => user_name,
               "message" => content,
+              "type" => type,
               "timestamp" => created_at
             }
 
@@ -65,17 +68,54 @@ defmodule RamboWeb.Api.RoomController do
             json(conn, %{status: "sent"})
 
           {:error, reason} ->
-            # DynamoDB 저장 실패시 오류 처리
             conn
             |> put_status(:internal_server_error)
             |> json(%{error: "Failed to save message", reason: inspect(reason)})
         end
 
       {:error, reason} ->
-        # 채팅방 조회 실패시 오류 처리
         conn
         |> put_status(:not_found)
         |> json(%{error: "Room not found", reason: inspect(reason)})
     end
+  end
+
+  def participate_users(conn, %{"room_id" => room_id}) do
+    key = "room:#{room_id}:users"
+
+    case Redix.command(Rambo.Redis, ["SMEMBERS", key]) do
+      {:ok, entries} ->
+        users =
+          entries
+          |> Enum.map(fn entry ->
+            case String.split(entry, "#", parts: 2) do
+              [user_id_str, user_name] ->
+                %{
+                  user_id: String.to_integer(user_id_str),
+                  user_name: user_name
+                }
+
+              _ ->
+                nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+
+        json(conn, %{room_id: room_id, users: users})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:internal_server_error)
+        |> json(%{error: "Failed to fetch users", reason: inspect(reason)})
+    end
+  end
+
+  def ban_user(conn, %{"user_id" => user_id}) do
+    key = "chat:banned:#{user_id}"
+
+    Redix.command!(Rambo.Redis, ["SET", key, "1"])
+    Redix.command!(Rambo.Redis, ["EXPIRE", key, "300"])
+
+    json(conn, %{status: "ok", message: "사용자를 5분간 차단했습니다."})
   end
 end

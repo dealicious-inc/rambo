@@ -30,6 +30,8 @@ defmodule RamboWeb.Router do
     get "/rooms", RoomController, :index
     post "/rooms", RoomController, :create
     post "/rooms/send-messages", RoomController, :send_message
+    get "/rooms/:room_id/participate-users", RoomController, :participate_users
+    post "/rooms/ban-user", RoomController, :ban_user
 
     get "/users", UserController, :index
     post "/users", UserController, :create

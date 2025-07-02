@@ -34,18 +34,10 @@ defmodule Rambo.Nats do
     receive do
       {:msg, %{topic: full_topic, body: body}} ->
         case Jason.decode(body) do
-          {:ok, %{"message" => _msg, "user_id" => _user_id, "user_name" => _user_name} = payload} ->
-            room = String.replace_prefix(full_topic, "chat.room.", "")
-
-            event =
-              case Map.get(payload, "system") do
-                true -> "system_msg"
-                _ -> "new_msg"
-              end
-
-            IO.inspect({:nats_received, full_topic, payload}, label: "🔥 NATS") # 👈 여기!
-
-            RamboWeb.Endpoint.broadcast("room:" <> room, event, payload)
+          {:ok, %{"message" => msg, "user_id" => user_id, "user_name" => user_name} = payload} ->
+            "chat.room." <> room = full_topic
+            RamboWeb.Endpoint.broadcast("room:" <> room, "new_msg", payload)
+            IO.puts("[#{user_id}][#{user_name}] #{msg}")
 
           _ ->
             IO.puts("Received invalid JSON message: #{inspect(body)}")
