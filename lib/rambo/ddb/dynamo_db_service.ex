@@ -38,7 +38,6 @@ defmodule Rambo.Ddb.DynamoDbService do
   """
   def get_message_sequence(room_id, message_id) when is_binary(message_id) and message_id != "" do
     pk = "room:#{room_id}"
-    Logger.info("pk: #{pk} message_id: #{message_id}")
 
     ExAws.Dynamo.query(@table,
       key_condition_expression: "pk = :pk AND message_id = :message_id",
@@ -48,29 +47,20 @@ defmodule Rambo.Ddb.DynamoDbService do
     ) |> ExAws.request()
     |> case do
       {:ok, %{"Items" => [item]} = response} ->
-        Logger.info("DDB 쿼리 응답: #{inspect(response, pretty: true)}")
-        Logger.info("조회된 아이템: #{inspect(item, pretty: true)}")
-
         sequence = case item["sequence"] do
           %{"N" => seq} ->
-            Logger.info("시퀀스(N): #{seq}")
             String.to_integer(seq)
           seq when is_integer(seq) ->
-            Logger.info("시퀀스(integer): #{seq}")
             seq
           seq when is_binary(seq) ->
-            Logger.info("시퀀스(binary): #{seq}")
             String.to_integer(seq)
           other ->
             Logger.warning("예상치 못한 시퀀스 형식: #{inspect(other)}")
             0
         end
         {:ok, sequence}
-
       {:ok, %{"Items" => []} = response} ->
-        Logger.info("DDB 쿼리 응답 (결과 없음): #{inspect(response, pretty: true)}")
         {:ok, 0}
-
       error ->
         Logger.error("DDB 쿼리 실패: #{inspect(error, pretty: true)}")
         error

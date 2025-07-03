@@ -33,6 +33,8 @@ defmodule Rambo.TalkRoomService do
       joined_at: NaiveDateTime.utc_now()
     })
     |> Repo.insert(on_conflict: :nothing) # 중복 참여 방지
+    # 성공시 참여 이벤트 발행
+
   end
 
   ## 3. 특정 채팅방 참여리스트
@@ -74,7 +76,7 @@ defmodule Rambo.TalkRoomService do
 
     Repo.all(query)
     |> Enum.map(fn {room, last_read_key_from_rdb} ->
-      {last_read_key, unread_count} = get_unread_message_count(room, user_id, last_read_key_from_rdb)
+      {last_read_key, unread_count} = get_last_read_key_and_unread_message_count(room, user_id, last_read_key_from_rdb)
         Logger.info("unread_count: #{unread_count}")
       %{
         id: room.id,
@@ -87,27 +89,34 @@ defmodule Rambo.TalkRoomService do
     end)
   end
 
-    # 안읽은 메시지갯수 가져오는 함수
-    # redis에 있으면 redis에서 가져오고 없으면 rdb 메시지키 보고 sequence는 ddb조회해서 가져오기
-    def get_unread_message_count(room, user_id, last_read_key_from_rdb) do
-      {:ok, room_max_seq} = RedisMessageStore.get_room_max_sequence(room.id)
-      redis_room_user_key = "room:#{room.id}#user:#{user_id}"
-
-      last_read_key = case RedisClient.get(redis_room_user_key) do
-        {:ok, nil} ->
-          last_read_key_from_rdb
-        {:ok, value} ->
-          value
-      end
-
-      case last_read_key do
-        nil -> {last_read_key, room_max_seq} # 없으면 모두 안읽었다고 생각하고 최대 시퀀스 가져오기
-        message_id ->
-          {:ok, last_read_msg_seq} = DynamoDbService.get_message_sequence(room.id, message_id)
-          Logger.info("GSI 쿼리 결과: message_id: #{message_id} seq: #{inspect(last_read_msg_seq)}")
-          {last_read_key, room_max_seq - last_read_msg_seq}
-      end
+  def get_room_by_id(room_id) do
+    case Repo.get(TalkRoom, room_id) do
+      nil -> {:error, "Room not found"}
+      room -> {:ok, room}
     end
+  end
+
+
+  # 안읽은 메시지갯수 가져오는 함수
+  # redis에 있으면 redis에서 가져오고 없으면 rdb 메시지키 보고 sequence는 ddb조회해서 가져오기
+  def get_last_read_key_and_unread_message_count(room, user_id, last_read_key_from_rdb) do
+    {:ok, room_max_seq} = RedisMessageStore.get_room_max_sequence(room.id)
+    redis_room_user_key = "room:#{room.id}#user:#{user_id}"
+
+    last_read_key = case RedisClient.get(redis_room_user_key) do
+      {:ok, nil} ->
+        last_read_key_from_rdb
+      {:ok, value} ->
+        value
+    end
+
+    case last_read_key do
+      nil -> {last_read_key, room_max_seq} # 없으면 모두 안읽었다고 생각하고 최대 시퀀스 가져오기
+      message_id ->
+        {:ok, last_read_msg_seq} = DynamoDbService.get_message_sequence(room.id, message_id)
+        {last_read_key, room_max_seq - last_read_msg_seq}
+    end
+  end
 
   def get_room_by_id(room_id) do
     case Repo.get(TalkRoom, room_id) do

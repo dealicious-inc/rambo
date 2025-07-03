@@ -16,6 +16,11 @@ defmodule RamboWeb.Api.TalkRoomController do
     # 채팅방 생성
     case TalkRoomService.create_room(%{room_type: room_type, name: name}) do
       {:ok, room} ->
+        # 채팅방 생성 후 채팅방 참여
+        TalkRoomService.join(room.id, user_id)
+        # 활동 시간 업데이트
+        TalkRoomService.touch_activity(room.id)
+
         json(conn, %{room_id: room.id, name: room.name, ddb_id: room.ddb_id})
 
       {:error, changeset} ->
