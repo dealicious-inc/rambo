@@ -12,28 +12,22 @@ defmodule Rambo.TalkRoom do
     timestamps()
   end
 
-  def changeset(room, attrs) do
-    room
-    |> cast(attrs, [:name, :room_type])
-    |> validate_required([:name, :room_type])
-    # ddb_id는 after_insert에서 설정할 것이므로 여기서는 제외
+  def changeset(talk_room, attrs) do
+    talk_room
+    |> cast(attrs, [:room_type, :name, :ddb_id])
+    |> validate_required([:name, :room_type, :ddb_id])
+    |> validate_inclusion(:room_type, ["private", "group"])
   end
 
-  # ddb의 pk가 될 값
-  def set_ddb_id(changeset) do
-    case changeset do
-      %{valid?: true, data: %{id: id}} ->
-        ddb_id = "talk_room##{id}"
-
-        # ddb_id 업데이트
-        changeset.data
-        |> Ecto.Changeset.change(%{ddb_id: ddb_id})
-        |> Repo.update()
-
-        {:ok, changeset}
-
-      _ ->
-        {:error, changeset}
+  defimpl Jason.Encoder do
+    def encode(%Rambo.TalkRoom{id: id, room_type: room_type, name: name, inserted_at: inserted_at, updated_at: updated_at}, opts) do
+      Jason.Encode.map(%{
+        id: id,
+        room_type: room_type,
+        name: name,
+        inserted_at: inserted_at,
+        updated_at: updated_at
+      }, opts)
     end
   end
 end

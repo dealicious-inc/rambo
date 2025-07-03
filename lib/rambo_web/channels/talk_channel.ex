@@ -8,15 +8,13 @@ defmodule RamboWeb.TalkChannel do
 
   require Logger
 
-  # talk channel talk:room_id형식으로 phx_join 이벤트 수신했을때
   def join("talk:" <> room_id_str, %{"user_id" => user_id_str}, socket) do
     with {room_id, _} <- Integer.parse(room_id_str),
          user_id = String.to_integer("#{user_id_str}"),
-         {:ok, _} <- TalkRoomService.join(room_id, user_id),
+         {:ok, _} <- TalkRoomService.join_user(room_id, user_id),
          {:ok, latest_key} <- TalkRoomService.get_latest_message_id(room_id),
          _ <- TalkRoomService.mark_as_read(room_id, user_id, latest_key) do
 
-      # channel에서 join event 수신시 nats 토픽 구독 시작
       Subscriber.subscribe_room(room_id)
 
       socket =

@@ -13,7 +13,7 @@ defmodule RamboWeb.UserLobbyChannel do
         end)
 
         # ✅ 현재 유저가 참여 중인 채팅방을 구독 → 초대 등 이벤트를 실시간으로 받기 위함
-        rooms = TalkRoomService.participate_list_with_unread_count(user_id)
+        rooms = TalkRoomService.participate_list(user_id)
         Enum.each(rooms, fn room ->
           Rambo.Talk.Subscriber.subscribe_room_for_lobby(room.id, self())
         end)
@@ -31,7 +31,7 @@ defmodule RamboWeb.UserLobbyChannel do
     IO.puts("📥 after_join - userId: #{user_id}")
 
     rooms =
-      TalkRoomService.participate_list_with_unread_count(user_id)
+      TalkRoomService.participate_list(user_id)
       |> Enum.sort_by(& &1.last_activity_at || DateTime.from_unix!(0), {:desc, DateTime})
       |> Enum.map(fn room ->
         %{

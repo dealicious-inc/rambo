@@ -12,9 +12,11 @@ defmodule RamboWeb.Api.TalkRoomController do
 
   # 채팅방 생성
   def create(conn, %{"name" => name, "room_type" => room_type, "user_id" => user_id}) do
+    # ddb_id 생성: room_type#user_id#timestamp 형식
+    ddb_id = "#{room_type}##{user_id}##{System.system_time(:second)}"
 
     # 채팅방 생성
-    case TalkRoomService.create_room(%{room_type: room_type, name: name}) do
+    case TalkRoomService.create_room(%{room_type: room_type, name: name, ddb_id: ddb_id}) do
       {:ok, room} ->
         json(conn, %{room_id: room.id, name: room.name, ddb_id: room.ddb_id})
 
@@ -28,7 +30,7 @@ defmodule RamboWeb.Api.TalkRoomController do
     rid = if is_binary(room_id), do: String.to_integer(room_id), else: room_id
     user_id = if is_binary(user_id), do: String.to_integer(user_id), else: user_id
 
-    case TalkRoomService.join(rid, user_id) do
+    case TalkRoomService.join_user(rid, user_id) do
       {:ok, _} ->
         # ✅ 초대된 유저 개인 채널로 NATS 메시지 발행 → 로비에서 수신
         payload = %{type: "invitation", room_id: rid, to_user_id: user_id}
@@ -51,7 +53,7 @@ defmodule RamboWeb.Api.TalkRoomController do
   def participate_list(conn, %{"user_id" => user_id_str}) do
     {user_id, _} = Integer.parse(user_id_str)
 
-    rooms = Rambo.TalkRoomService.participate_list_with_unread_count(user_id)
+    rooms = Rambo.TalkRoomService.participate_list(user_id)
 
     json(conn, rooms)
   end
