@@ -19,7 +19,6 @@ defmodule RamboWeb.TalkChannel do
       # channel에서 join event 수신시 nats 토픽 구독 시작
       Subscriber.subscribe_room(room_id)
 
-      notify_user_joined(room_id, user_id)
       socket =
         socket
         |> assign(:room_id, room_id)
@@ -119,18 +118,6 @@ defmodule RamboWeb.TalkChannel do
     end
 
     {:noreply, socket}
-  end
-
-  defp notify_user_joined(room_id, user_id) do
-    payload = %{
-      type: "system",
-      event: "user_joined",
-      room_id: room_id,
-      user_id: user_id,
-      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
-    }
-
-    Rambo.Nats.JetStream.publish("talk.room.#{room_id}", Jason.encode!(payload))
   end
 
 end
