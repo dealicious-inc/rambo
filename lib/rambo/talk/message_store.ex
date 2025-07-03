@@ -1,99 +1,162 @@
-defmodule Rambo.Talk.MessageStore do
-  @moduledoc "DynamoDB에 채팅 메시지를 저장하고 조회하는 모듈"
-
-  @table "messages"
-
-  require Logger
-  alias Rambo.RedisClient
-  alias Rambo.Ddb.DynamoDbService
-  alias Rambo.Redis.RedisMessageStore
-
-  def store_message(attrs) do
-    pk = "room:#{attrs[:room_id]}"
-    sk = "msg##{attrs[:timestamp]}"
-    message_id = UUID.uuid4()
-    timestamp_kst =
-      DateTime.now!("Asia/Seoul")
-      |> DateTime.truncate(:millisecond)
-      |> DateTime.to_iso8601()
-
-
-    sender_id =
-      case attrs["sender_id"] || attrs[:sender_id] do
-        nil ->
-          Logger.error("Sender ID is missing in the request")
-          raise "sender_id is required"
-
-        id when is_integer(id) ->
-          id
-
-        id ->
-          String.to_integer(id)
-      end
-
-    Logger.info("pk:#{pk}")
-    item = %{
-      "pk" => pk,
-      "sk" => sk,
-      "name" => attrs["name"] || attrs[:name],
-      "message_id" => message_id,
-      "sender_id" => sender_id,
-      "content" => attrs["content"] || attrs[:content],
-      "message_type" => Map.get(attrs, "message_type") || Map.get(attrs, :message_type, "text"),
-      "sent_at" => timestamp_kst,
-      "sequence" => attrs[:sequence]
-    }
-
-    # 로깅: 저장할 항목 출력
-    Logger.info("DDB 저장할 row: #{inspect(item)}")
-
-    # DynamoDB에 데이터를 삽입
-    ExAws.Dynamo.put_item(@table, item)
-    |> ExAws.request()
-    |> case do
-      {:ok, _} ->
-        Logger.info("✅ 저장완료")
-        {:ok, item}
-      error ->
-        Logger.error("🚨 실패 #{inspect(error)}")
-        error
-    end
-  end
-
-  # 안읽은 메시지갯수 가져오는 함수
-  def get_unread_message_count(room, user_id,last_read_key) do
-    {:ok, room_max_seq} = RedisMessageStore.get_room_max_sequence(room.id)
-    redis_room_user_key = "room:#{room.id}#user:#{user_id}"
-
-    Logger.info("--------------------------------")
-    Logger.info("room: #{room.id} - id 방")
-    Logger.info("redis_room_user_key: #{redis_room_user_key}")
-    Logger.info("last_read_key: #{inspect(last_read_key)}")
-    Logger.info("room_max_seq: #{room_max_seq}")
-    Logger.info("--------------------------------")
-
-    # redis에 있으면 redis에서 가져오고 없으면 rdb값보고 ddb조회해서 가져오기
-    redis_last_key = case RedisClient.get(redis_room_user_key) do
-      {:ok, nil} ->
-        last_read_key
-        {:ok, value} ->
-          value
-        end
-
-    case redis_last_key do
-      nil -> room_max_seq # 없으면 모두 안읽었다고 생각하고 최대 시퀀스 가져오기
-      message_id ->
-        {:ok, last_read_msg_seq} = DynamoDbService.get_message_sequence(room.id, message_id)
-        Logger.info("GSI 쿼리 결과: message_id: #{message_id} seq: #{inspect(last_read_msg_seq)}")
-        room_max_seq - last_read_msg_seq
-    end
-  end
-
-
+#defmodule Rambo.Talk.MessageStore2 do
+#  @moduledoc "DynamoDB에 채팅 메시지를 저장하고 조회하는 모듈"
+#
+#  @table "talk_messages"
+#
+#  require Logger
+#  alias Rambo.Repo
+#
+#  def store_message(attrs) do
+#    message_id = "MSG##{System.system_time(:millisecond)}"
+#
+#    # sender_id가 문자열로 오면 정수로 변환
+#    sender_id =
+#      case attrs["sender_id"] || attrs[:sender_id] do
+#        nil ->
+#          Logger.error("Sender ID is missing in the request")
+#          raise "sender_id is required"
+#
+#        id when is_integer(id) ->
+#          id
+#
+#        id ->
+#          String.to_integer(id)
+#      end
+#
+#    item = %{
+#      "id" => attrs[:ddb_id],
+#      "message_id" => message_id,
+#      "name" => attrs["name"] || attrs[:name],
+#      "sender_id" => sender_id,
+#      "message" => attrs["message"] || attrs[:message],
+#      "message_type" => Map.get(attrs, "message_type") || Map.get(attrs, :message_type, "text"),
+#      "sent_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+#    }
+#
+#    # 로깅: 저장할 항목 출력
+#    Logger.info("Attempting to store message: #{inspect(item)}")
+#
+#    # DynamoDB에 데이터를 삽입
+#    ExAws.Dynamo.put_item(@table, item)
+#    |> ExAws.request()
+#    |> case do
+#      {:ok, _} ->
+#        Logger.info("✅ Successfully stored the message with ID: #{message_id}")
+#        {:ok, item}
+#
+#      error ->
+#        Logger.error("🚨 Failed to store the message. Error: #{inspect(error)}")
+#        error
+#    end
+#  end
+#
+#  def get_messages(room_id, opts \\ []) do
+#    case get_ddb_id_from_sql(room_id) do
+#      nil ->
+#        {:error, :room_not_found}
+#
+#      ddb_id ->
+#        limit = Keyword.get(opts, :limit, 20)
+#        last_seen_key = Keyword.get(opts, :last_seen_key)
+#
+#        query_opts =
+#          [
+#            key_condition_expression: "id = :id",
+#            expression_attribute_values: %{
+#              "id" => %{"S" => ddb_id}
+#            },
+#            scan_index_forward: false,
+#            limit: limit
+#          ] ++
+#            if last_seen_key do
+#              [
+#                exclusive_start_key: %{
+#                  "id" => %{"S" => ddb_id},
+#                  "message_id" => %{"S" => last_seen_key}
+#                }
+#              ]
+#            else
+#              []
+#            end
+#
+#        ExAws.Dynamo.query("talk_messages", query_opts)
+#        |> ExAws.request()
+#        |> case do
+#          {:ok, %{"Items" => items}} ->
+#            parsed =
+#              Enum.map(items, fn item ->
+#                %{
+#                  room_id: item["id"]["S"],
+#                  sender_id: item["sender_id"]["N"] |> String.to_integer(),
+#                  message_id: item["message_id"]["S"],
+#                  message: item["message"]["S"],
+#                  message_type: item["message_type"]["S"],
+#                  sent_at: item["sent_at"]["S"]
+#                }
+#              end)
+#
+#            {:ok, parsed}
+#
+#          error ->
+#            IO.inspect(error, label: "🚨 에러")
+#            error
+#        end
+#    end
+#  end
+#
+#  def count_messages_after(room_id, last_read_key, user_id) do
+#    base_expr_values = %{
+#      rid: %{"S" => room_id},
+#      me: %{"N" => to_string(user_id)}
+#    }
+#
+#    opts =
+#      cond do
+#        is_nil(last_read_key) or last_read_key == "" ->
+#          [
+#            key_condition_expression: "id = :rid",
+#            filter_expression: "sender_id <> :me",
+#            expression_attribute_values: base_expr_values,
+#            select: "COUNT"
+#          ]
+#
+#        true ->
+#          [
+#            key_condition_expression: "id = :rid AND message_id > :mid",
+#            filter_expression: "sender_id <> :me",
+#            expression_attribute_values:
+#              Map.merge(base_expr_values, %{mid: %{"S" => last_read_key}}),
+#            select: "COUNT"
+#          ]
+#      end
+#
+#    ExAws.Dynamo.query("talk_messages", opts)
+#    |> ExAws.request()
+#    |> case do
+#         {:ok, %{"Count" => count}} -> {:ok, count}
+#         error -> error
+#       end
+#  end
+#
+#  def count_all_messages(room_id) do
+#    ExAws.Dynamo.query("talk_messages",
+#      key_condition_expression: "room_id = :rid",
+#      expression_attribute_values: %{
+#        :rid => %{"N" => to_string(room_id)}
+#      },
+#      select: "COUNT"
+#    )
+#    |> ExAws.request()
+#    |> case do
+#      {:ok, %{"Count" => count}} -> {:ok, count}
+#      error -> error
+#    end
+#  end
+#
 #  defp get_ddb_id_from_sql(room_id) do
 #    case Repo.get(Rambo.TalkRoom, room_id) do
 #      nil -> nil
 #      room -> room.ddb_id
 #    end
 #  end
-end
+#end
