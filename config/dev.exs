@@ -4,7 +4,7 @@ import Config
 config :rambo, Rambo.Repo,
   username: "root",
   password: "1234",
-  hostname: "localhost",
+  hostname: "mysql",
   database: "rambo_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
@@ -19,6 +19,10 @@ config :ex_aws,
          host: "localhost",
          port: 8000
        ]
+
+config :rambo, :nats,
+       host: "nats",
+       port: 4222
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

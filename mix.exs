@@ -7,6 +7,7 @@ defmodule Rambo.MixProject do
       version: "0.1.0",
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
+      compilers: [:phoenix] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps()
@@ -19,7 +20,7 @@ defmodule Rambo.MixProject do
   def application do
     [
       mod: {Rambo.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :phoenix]
     ]
   end
 
@@ -55,7 +56,6 @@ defmodule Rambo.MixProject do
       {:timex, "~> 3.7"},
       {:jetstream, "~> 0.0.9"},
       {:redix, "~> 1.5"},
-      {:uuid, "~> 1.1"},
       {:phoenix_live_reload, "~> 1.4", only: :dev},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev}
     ]

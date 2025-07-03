@@ -3,22 +3,9 @@
     <CLASSES>
       <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
       <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
-      <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
-      <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
-      <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
-      <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
-      <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
-      <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
-      <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
-      <root url="file://$PROJECT_DIR$/_build/dev/lib/ex_aws_dynamo/ebin" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
-      <root url="file://$PROJECT_DIR$/deps/ex_aws_dynamo/lib" />
-      <root url="file://$PROJECT_DIR$/deps/ex_aws_dynamo/lib" />
-      <root url="file://$PROJECT_DIR$/deps/ex_aws_dynamo/lib" />
-      <root url="file://$PROJECT_DIR$/deps/ex_aws_dynamo/lib" />
-      <root url="file://$PROJECT_DIR$/deps/ex_aws_dynamo/lib" />
       <root url="file://$PROJECT_DIR$/deps/ex_aws_dynamo/lib" />
       <root url="file://$PROJECT_DIR$/deps/ex_aws_dynamo/lib" />
     </SOURCES>
