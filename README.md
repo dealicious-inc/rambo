@@ -63,9 +63,10 @@ aws dynamodb create-table \
       { "AttributeName": "pk", "KeyType": "HASH" },
       { "AttributeName": "message_id", "KeyType": "RANGE" }
     ],
-    "Projection": {
-      "ProjectionType": "ALL"
-    }
+      "Projection": {
+        "ProjectionType": "INCLUDE",
+        "NonKeyAttributes": ["sequence"]
+      }
   }
 ]' \
 --region ap-northeast-2

@@ -1,6 +1,8 @@
 defmodule Rambo.TalkRoomService do
   @moduledoc """
   TalkRoom 생성, 참여, 읽음 처리 등 채팅방 관련 서비스 로직
+  이벤트 관련 로직은 빠져있음,
+  이벤트 발행을 위해 필요한 정보나 rdb, ddb, redis 접근 포함
   """
   require Logger
 
@@ -9,17 +11,21 @@ defmodule Rambo.TalkRoomService do
   alias Rambo.TalkRoomUser
   alias Rambo.Ddb.DynamoDbService
   alias Rambo.Redis.RedisMessageStore
+  alias Rambo.RedisClient
   import Ecto.Query
 
-  ## 1. 채팅방 생성
-  def create_room(%{room_type: room_type, name: name, ddb_id: ddb_id}) do
-    %TalkRoom{}
-    |> TalkRoom.changeset(%{room_type: room_type, name: name, ddb_id: ddb_id})
-    |> Repo.insert()
+  ## 1. 채팅방 생성 / 호출부에서 join 이벤트 발행 필요
+  def create_room(attrs) do
+    case %TalkRoom{}
+         |> TalkRoom.changeset(attrs)
+         |> Repo.insert() do
+      {:ok, room} -> TalkRoom.set_ddb_id(room)
+      error -> error
+    end
   end
 
-  ## 2. 채팅방에 유저 참여
-  def join_user(talk_room_id, user_id) do
+  ## 2. 채팅방 참여 TalkRoomUser 생성 / 호출부에서 join 이벤트 발행 필요
+  def join(talk_room_id, user_id) do
     %TalkRoomUser{}
     |> TalkRoomUser.changeset(%{
       talk_room_id: talk_room_id,
@@ -29,51 +35,22 @@ defmodule Rambo.TalkRoomService do
     |> Repo.insert(on_conflict: :nothing) # 중복 참여 방지
   end
 
-  ## 3. 채팅방 유저 불러오기
+  ## 3. 특정 채팅방 참여리스트
   def list_users(talk_room_id) do
     from(u in TalkRoomUser, where: u.talk_room_id == ^talk_room_id)
     |> Repo.all()
   end
 
-  ## 4. 마지막으로 읽은 메시지 기록 (redis에)
+  ## 4. redis에 마지막으로 읽은 메시지키 set
   def mark_as_read(talk_room_id, user_id, last_read_key) do
-    from(u in TalkRoomUser,
-      where: u.talk_room_id == ^talk_room_id and u.user_id == ^user_id
-    )
-    # |> Repo.update_all(set: [last_read_message_key: last_read_key]) # 메시지 읽을때마다 RDB업뎃 해줄수 없음
     RedisMessageStore.update_user_last_read(talk_room_id, user_id, last_read_key)
-  end
-
-  ## 5. 1:1 채팅방 찾거나 생성
-  def find_or_create_private_room(user1_id, user2_id) do
-    {uid1, uid2} = Enum.min_max([user1_id, user2_id])
-    name = "#{uid1}_#{uid2}"
-
-    case Repo.get_by(TalkRoom, room_type: "private", name: name) do
-      nil ->
-        # 없으면 새로 만들고 둘 다 참여
-        Repo.transaction(fn ->
-          {:ok, room} =
-            %TalkRoom{}
-            |> TalkRoom.changeset(%{room_type: "private", name: name})
-            |> Repo.insert()
-
-          join_user(room.id, uid1)
-          join_user(room.id, uid2)
-
-          room
-        end)
-
-      room ->
-        {:ok, room}
-    end
   end
 
   def list_rooms do
     Repo.all(TalkRoom)
   end
 
-  def get_last_read_key(room_id, user_id) do
+  def get_last_read_key_from_rdb(room_id, user_id) do
     from(u in TalkRoomUser,
       where: u.talk_room_id == ^room_id and u.user_id == ^user_id,
       select: u.last_read_message_key
@@ -85,8 +62,8 @@ defmodule Rambo.TalkRoomService do
        end
   end
 
-  def participate_list(user_id) do
-    # 유저가 참여한 채팅방 목록
+  # 유저가 참여한 채팅방 목록
+  def participate_list_with_unread_count(user_id) do
     query =
       from r in TalkRoom,
            join: m in TalkRoomUser,
@@ -96,11 +73,8 @@ defmodule Rambo.TalkRoomService do
            preload: :talk_room_users
 
     Repo.all(query)
-    |> Enum.map(fn {room, last_read_key} ->
-      unread_count =
-        case Rambo.Talk.MessageStore.get_unread_message_count(room, user_id, last_read_key) do
-          count -> count
-        end
+    |> Enum.map(fn {room, last_read_key_from_rdb} ->
+      {last_read_key, unread_count} = get_unread_message_count(room, user_id, last_read_key_from_rdb)
         Logger.info("unread_count: #{unread_count}")
       %{
         id: room.id,
@@ -112,6 +86,28 @@ defmodule Rambo.TalkRoomService do
       }
     end)
   end
+
+    # 안읽은 메시지갯수 가져오는 함수
+    # redis에 있으면 redis에서 가져오고 없으면 rdb 메시지키 보고 sequence는 ddb조회해서 가져오기
+    def get_unread_message_count(room, user_id, last_read_key_from_rdb) do
+      {:ok, room_max_seq} = RedisMessageStore.get_room_max_sequence(room.id)
+      redis_room_user_key = "room:#{room.id}#user:#{user_id}"
+
+      last_read_key = case RedisClient.get(redis_room_user_key) do
+        {:ok, nil} ->
+          last_read_key_from_rdb
+        {:ok, value} ->
+          value
+      end
+
+      case last_read_key do
+        nil -> {last_read_key, room_max_seq} # 없으면 모두 안읽었다고 생각하고 최대 시퀀스 가져오기
+        message_id ->
+          {:ok, last_read_msg_seq} = DynamoDbService.get_message_sequence(room.id, message_id)
+          Logger.info("GSI 쿼리 결과: message_id: #{message_id} seq: #{inspect(last_read_msg_seq)}")
+          {last_read_key, room_max_seq - last_read_msg_seq}
+      end
+    end
 
   def get_room_by_id(room_id) do
     case Repo.get(TalkRoom, room_id) do
