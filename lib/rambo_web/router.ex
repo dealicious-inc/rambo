@@ -22,6 +22,7 @@ defmodule RamboWeb.Router do
     get "/rooms", ChatController, :rooms
     get "/live_chat", ChatController, :live_chat
     get "/lobby", ChatController, :lobby
+    get "/talks", TalkController, :index
   end
 
   scope "/api", RamboWeb.Api do

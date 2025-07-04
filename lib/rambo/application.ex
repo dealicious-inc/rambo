@@ -24,6 +24,7 @@ defmodule Rambo.Application do
         restart: :permanent,
         shutdown: 500
       },
+      Rambo.Nats.TalkSubscriber,
       %{
         id: :nats_subscriber,
         start: {Rambo.Nats.Starter, :start_link, [[]]}
@@ -31,6 +32,7 @@ defmodule Rambo.Application do
       {Registry, keys: :unique, name: Rambo.Nats.RoomRegistry},
       {DynamicSupervisor, strategy: :one_for_one, name: Rambo.Nats.RoomSupervisor},
       {Phoenix.PubSub, name: Rambo.PubSub},
+      RamboWeb.Presence,
     ]
 
     opts = [strategy: :one_for_one, name: Rambo.Supervisor]

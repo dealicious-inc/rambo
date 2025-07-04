@@ -3,28 +3,30 @@ defmodule RamboWeb.Api.TalkRoomController do
 
   alias Rambo.TalkRoomService
 
+  action_fallback RamboWeb.FallbackController
+
   # 채팅방 목록 조회
   def index(conn, _params) do
     rooms = TalkRoomService.list_rooms()
-
     json(conn, rooms)
   end
 
   # 채팅방 생성
   def create(conn, %{"name" => name, "room_type" => room_type, "user_id" => user_id}) do
-
-    # 채팅방 생성
-    case TalkRoomService.create_room(%{room_type: room_type, name: name}) do
+    case TalkRoomService.create_room(%{room_type: room_type, name: name}, user_id) do
       {:ok, room} ->
-        # 채팅방 생성 후 채팅방 참여
-        TalkRoomService.join(room.id, user_id)
         # 활동 시간 업데이트
         TalkRoomService.touch_activity(room.id)
 
-        json(conn, %{room_id: room.id, name: room.name, ddb_id: room.ddb_id})
+        # 채널에 채팅방 참여 이벤트 발행
+        payload = %{type: "join", room_id: room.id, user_id: user_id}
+        Rambo.Nats.JetStream.publish("talk.room.#{room.id}", Jason.encode!(payload))
 
-      {:error, changeset} ->
-        conn |> put_status(:unprocessable_entity) |> json(%{errors: changeset_errors(changeset)})
+        conn
+        |> put_status(:created)
+        |> json(%{room_id: room.id, name: room.name, ddb_id: room.ddb_id})
+
+      error -> error
     end
   end
 
@@ -33,25 +35,16 @@ defmodule RamboWeb.Api.TalkRoomController do
     rid = if is_binary(room_id), do: String.to_integer(room_id), else: room_id
     user_id = if is_binary(user_id), do: String.to_integer(user_id), else: user_id
 
-    case TalkRoomService.join(rid, user_id) do
-      {:ok, _} ->
-        # ✅ 초대된 유저 개인 채널로 NATS 메시지 발행 → 로비에서 수신
-        payload = %{type: "invitation", room_id: rid, to_user_id: user_id}
-        Rambo.Nats.JetStream.publish("talk.user.#{user_id}", Jason.encode!(payload))
-        TalkRoomService.touch_activity(rid)
+    with {:ok, _} <- TalkRoomService.join_room(rid, user_id) do
+      # ✅ 초대된 유저 개인 채널로 NATS 메시지 발행 → 로비에서 수신
+      payload = %{type: "invitation", room_id: rid, to_user_id: user_id}
+      Rambo.Nats.JetStream.publish("talk.user.#{user_id}", Jason.encode!(payload))
+      TalkRoomService.touch_activity(rid)
 
-        json(conn, %{message: "joined"})
-
-      _ ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: "Join failed"})
+      json(conn, %{message: "joined"})
     end
   end
 
-  defp changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-  end
 
   def participate_list(conn, %{"user_id" => user_id_str}) do
     {user_id, _} = Integer.parse(user_id_str)
@@ -61,24 +54,24 @@ defmodule RamboWeb.Api.TalkRoomController do
     json(conn, rooms)
   end
 
-  def send_message(conn, %{"id" => room_id, "sender_id" => sender_id, "message" => message}) do
-    with {rid, _} <- Integer.parse(room_id),
-         sid when is_integer(sid) <- sender_id,
-         {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(rid),
+  # def send_message(conn, %{"id" => room_id, "sender_id" => sender_id, "message" => message}) do
+  #   with {rid, _} <- Integer.parse(room_id),
+  #        sid when is_integer(sid) <- sender_id,
+  #        {:ok, room} <- Rambo.TalkRoom.get(rid),
 
-         {:ok, item} <- Rambo.Talk.MessageStore.store_message(%{
-           room_id: "#{rid}",
-           sender_id: sid,
-           message: message,
-           name: room.name,
-           ddb_id: room.ddb_id
-         }),
-         :ok <- Rambo.Nats.JetStream.publish("talk.room.#{rid}", Jason.encode!(item)) do
-      json(conn, %{result: "stored", item: item})
-    else
-      _ -> conn |> put_status(:bad_request) |> json(%{error: "Failed to store or publish message"})
-    end
-  end
+  #        {:ok, item} <- Rambo.Talk.MessageStore.store_message(%{
+  #          room_id: "#{rid}",
+  #          sender_id: sid,
+  #          message: message,
+  #          name: room.name,
+  #          ddb_id: room.ddb_id
+  #        }),
+  #        :ok <- Rambo.Nats.JetStream.publish("talk.room.#{rid}", Jason.encode!(item)) do
+  #     json(conn, %{result: "stored", item: item})
+  #   else
+  #     _ -> conn |> put_status(:bad_request) |> json(%{error: "Failed to store or publish message"})
+  #   end
+  # end
 
   def messages(conn, %{"id" => room_id} = params) do
     limit = Map.get(params, "limit", "20") |> String.to_integer()

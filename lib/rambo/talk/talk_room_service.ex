@@ -1,46 +1,51 @@
 defmodule Rambo.TalkRoomService do
   @moduledoc """
   TalkRoom 생성, 참여, 읽음 처리 등 채팅방 관련 서비스 로직
-  이벤트 관련 로직은 빠져있음,
   이벤트 발행을 위해 필요한 정보나 rdb, ddb, redis 접근 포함
   """
   require Logger
 
-  alias Rambo.Repo
-  alias Rambo.TalkRoom
-  alias Rambo.TalkRoomUser
+  alias Rambo.{Repo, TalkRoom, TalkRoomUser, Users.User}
   alias Rambo.Ddb.DynamoDbService
   alias Rambo.Redis.RedisMessageStore
   alias Rambo.RedisClient
   import Ecto.Query
+  alias Phoenix.PubSub
 
-  ## 1. 채팅방 생성 / 호출부에서 join 이벤트 발행 필요
-  def create_room(attrs) do
-    case %TalkRoom{}
-         |> TalkRoom.changeset(attrs)
-         |> Repo.insert() do
-      {:ok, room} -> TalkRoom.set_ddb_id(room)
-      error -> error
+  @pubsub Rambo.PubSub
+
+  ## 1. 채팅방 생성 및 생성자 참여를 트랜잭션으로 처리
+  def create_room(attrs, creator_id) do
+    with {:ok, _user} <- User.get_active_user(creator_id) do
+      Repo.transaction(fn ->
+        with {:ok, room} <- TalkRoom.create(attrs),
+             {:ok, room_with_ddb_pk} <- TalkRoom.set_ddb_id(room) do
+              room_with_ddb_pk
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
     end
   end
 
-  ## 2. 채팅방 참여 TalkRoomUser 생성 / 호출부에서 join 이벤트 발행 필요
-  def join(talk_room_id, user_id) do
-    %TalkRoomUser{}
-    |> TalkRoomUser.changeset(%{
-      talk_room_id: talk_room_id,
-      user_id: user_id,
-      joined_at: NaiveDateTime.utc_now()
-    })
-    |> Repo.insert(on_conflict: :nothing) # 중복 참여 방지
-    # 성공시 참여 이벤트 발행
+  ## 2. 채팅방 참여 create_room에서 받은 콜백으로 join push
+  def join_talk(talk_room_id, user_id) do
+    with {:ok, user} <- User.get_active_user(user_id),
+         {:ok, room} <- TalkRoom.get(talk_room_id) do
+      TalkRoomUser.create(%{
+        talk_room_id: room.id,
+        user_id: user.id,
+        joined_at: NaiveDateTime.utc_now()
+      })
+      # 소켓 join 이벤트 발행
 
+      {:ok, room}
+    end
   end
 
   ## 3. 특정 채팅방 참여리스트
   def list_users(talk_room_id) do
-    from(u in TalkRoomUser, where: u.talk_room_id == ^talk_room_id)
-    |> Repo.all()
+    TalkRoomUser.list_by_room(talk_room_id)
   end
 
   ## 4. redis에 마지막으로 읽은 메시지키 set
@@ -49,19 +54,7 @@ defmodule Rambo.TalkRoomService do
   end
 
   def list_rooms do
-    Repo.all(TalkRoom)
-  end
-
-  def get_last_read_key_from_rdb(room_id, user_id) do
-    from(u in TalkRoomUser,
-      where: u.talk_room_id == ^room_id and u.user_id == ^user_id,
-      select: u.last_read_message_key
-    )
-    |> Repo.one()
-    |> case do
-         nil -> :not_found
-         key -> {:ok, key}
-       end
+    TalkRoom.list()
   end
 
   # 유저가 참여한 채팅방 목록
@@ -96,6 +89,20 @@ defmodule Rambo.TalkRoomService do
     end
   end
 
+  def get_latest_message_id(room_id) do
+    case DynamoDbService.get_messages(room_id, limit: 1, sort_order: :desc) do
+      {:ok, [latest | _]} -> {:ok, latest.message_id}
+      _ -> {:ok, nil}
+    end
+  end
+
+  def touch_activity(room_id) do
+    TalkRoom.touch_activity(room_id)
+  end
+
+  #########################################################
+  # PRIVATE FUNCTIONS
+  #########################################################
 
   # 안읽은 메시지갯수 가져오는 함수
   # redis에 있으면 redis에서 가져오고 없으면 rdb 메시지키 보고 sequence는 ddb조회해서 가져오기
@@ -118,25 +125,21 @@ defmodule Rambo.TalkRoomService do
     end
   end
 
-  def get_room_by_id(room_id) do
-    case Repo.get(TalkRoom, room_id) do
-      nil -> {:error, "Room not found"}
-      room -> {:ok, room}
-    end
+
+  def get_last_read_key_from_rdb(room_id, user_id) do
+    TalkRoomUser.get_last_read_key(room_id, user_id)
   end
 
-  def get_latest_message_id(room_id) do
-    case DynamoDbService.get_messages(room_id, limit: 1, sort_order: :desc) do
-      {:ok, [latest | _]} -> {:ok, latest.message_id}
-      _ -> {:ok, nil}
-    end
-  end
+  defp broadcast_room_join(room, creator_id) do
+    payload = %{
+      type: "system",
+      event: "join",
+      room_id: room.id,
+      name: room.name,
+      creator_id: creator_id,
+      timestamp: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
 
-  def touch_activity(room_id) do
-    {_, _} =
-      from(r in TalkRoom, where: r.id == ^room_id)
-      |> Repo.update_all(set: [last_activity_at: DateTime.utc_now()])
-
-    :ok
+    PubSub.broadcast(@pubsub, "talk:#{room.id}", {:room_created, payload})
   end
 end

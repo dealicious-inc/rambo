@@ -1,0 +1,55 @@
+<div class="min-h-screen bg-gray-50 flex items-center justify-center">
+  <div class="w-full max-w-md bg-white p-6 rounded-xl shadow-lg">
+    <h1 class="text-2xl font-bold mb-6 text-center">💬 채팅방 생성 테스트</h1>
+
+    <form
+      hx-post="/api/talk_rooms"
+      hx-trigger="submit"
+      hx-target="#result"
+      hx-swap="innerHTML"
+      class="space-y-4"
+    >
+      <div>
+        <label class="block text-sm font-medium text-gray-700">채팅방 이름</label>
+        <input
+          type="text"
+          name="name"
+          value="7/5채팅방"
+          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">타입</label>
+        <select
+          name="room_type"
+          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+        >
+          <option value="private">private</option>
+          <option value="group">group</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">user_id</label>
+        <input
+          type="number"
+          name="user_id"
+          value="1"
+          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+        />
+      </div>
+
+      <button
+        type="submit"
+        class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors"
+      >
+        생성하기
+      </button>
+    </form>
+
+    <div id="result" class="mt-6 text-center text-sm text-gray-600">
+      <em>결과가 여기에 표시됩니다</em>
+    </div>
+  </div>
+</div>

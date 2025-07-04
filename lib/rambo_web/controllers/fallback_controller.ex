@@ -15,11 +15,13 @@ defmodule RamboWeb.FallbackController do
     |> render(:error, changeset: changeset)
   end
 
-  def call(conn, {:error, :user_not_found}) do
+  def call(conn, {:error, {:not_found, model}}) do
+    model_name = model |> to_string() |> String.replace("_", " ")
+
     conn
     |> put_status(:not_found)
     |> put_view(json: RamboWeb.ErrorJSON)
-    |> render(:error, message: "존재하지 않는 사용자입니다.")
+    |> render(:error, message: "존재하지 않는 #{model_name}입니다.")
   end
 
   def call(conn, {:error, :user_deleted}) do
@@ -27,13 +29,6 @@ defmodule RamboWeb.FallbackController do
     |> put_status(:forbidden)
     |> put_view(json: RamboWeb.ErrorJSON)
     |> render(:error, message: "삭제된 사용자입니다.")
-  end
-
-  def call(conn, {:error, :room_not_found}) do
-    conn
-    |> put_status(:not_found)
-    |> put_view(json: RamboWeb.ErrorJSON)
-    |> render(:error, message: "존재하지 않는 채팅방입니다.")
   end
 
   def call(conn, {:error, :internal_server_error}) do

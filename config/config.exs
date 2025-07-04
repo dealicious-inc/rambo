@@ -27,6 +27,9 @@ config :rambo, Rambo.PubSub,
   connection: :gnat,
   json_library: Jason
 
+config :rambo, RamboWeb.Presence,
+  pubsub_server: Rambo.PubSub
+
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails

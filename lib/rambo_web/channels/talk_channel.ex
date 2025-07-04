@@ -2,43 +2,50 @@ defmodule RamboWeb.TalkChannel do
   use Phoenix.Channel
 
   alias Rambo.TalkRoomService
-  alias Rambo.Talk.Subscriber
   alias Rambo.Redis.RedisMessageStore
   alias Rambo.Ddb.DynamoDbService
+  alias RamboWeb.Presence
 
   require Logger
 
-  # talk channel talk:room_id형식으로 phx_join 이벤트 수신했을때
-  def join("talk:" <> room_id_str, %{"user_id" => user_id_str}, socket) do
-    with {room_id, _} <- Integer.parse(room_id_str),
-         user_id = String.to_integer("#{user_id_str}"),
-         {:ok, _} <- TalkRoomService.join(room_id, user_id),
-         {:ok, latest_key} <- TalkRoomService.get_latest_message_id(room_id),
-         _ <- TalkRoomService.mark_as_read(room_id, user_id, latest_key) do
+  def join("talk:" <> room_id, %{"user_id" => user_id}, socket) do
+    Logger.info("웹소켓 톡 조인 이벤트 수신 room_id: #{room_id}, user_id: #{user_id}")
 
-      # channel에서 join event 수신시 nats 토픽 구독 시작
-      Subscriber.subscribe_room(room_id)
+    case TalkRoomService.join_talk(room_id, user_id) do
+      {:ok, _room} ->
+        # Presence 트래킹
+        send(self(), :after_join)
 
-      notify_user_joined(room_id, user_id)
-      socket =
-        socket
-        |> assign(:room_id, room_id)
-        |> assign(:user_id, user_id)
+        {:ok,
+          socket
+          |> assign(:room_id, room_id)
+          |> assign(:user_id, user_id)}
 
-      IO.puts("User #{user_id} joined room #{room_id}")
-      {:ok, socket}
-    else
-      _ -> {:error, %{reason: "invalid room or user"}}
+      {:error, reason} ->
+        Logger.error("채팅방 조인 실패: #{inspect(reason)}")
+        {:error, %{reason: reason}}
     end
   end
 
+  def handle_info(:after_join, socket) do
+    broadcast! socket, "user:entered", %{user: socket.assigns.user_id, body: "#{socket.assigns.user_id} 두둥 등장!"}
+
+    Logger.debug ">> join #{inspect socket}"
+    {:ok, _} =
+      Presence.track(socket, socket.assigns.room_id, %{
+        online_at: inspect(System.system_time(:second))
+      })
+
+    push(socket, "presence_state", Presence.list(socket))
+    {:noreply, socket}
+  end
 
   def handle_in("new_msg", %{"user" => user_id, "message" => message}, socket) do
     room_id = socket.assigns.room_id
     timestamp = System.system_time(:millisecond)
 
     Logger.info("톡채널 #{room_id}")
-    with {:ok, room} <- Rambo.TalkRoomService.get_room_by_id(room_id) do
+    with {:ok, room} <- Rambo.TalkRoom.get(room_id) do
       {:ok, max_sequence} = RedisMessageStore.get_room_max_sequence(room_id)
 
       Logger.info("max_sequence: #{max_sequence}")
