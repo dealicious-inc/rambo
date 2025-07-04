@@ -1,6 +1,5 @@
 defmodule Rambo.TalkRoom do
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Rambo.Schema
 
   schema "talk_rooms" do
     field :room_type, :string
@@ -16,24 +15,53 @@ defmodule Rambo.TalkRoom do
     room
     |> cast(attrs, [:name, :room_type])
     |> validate_required([:name, :room_type])
-    # ddb_id는 after_insert에서 설정할 것이므로 여기서는 제외
   end
 
-  # ddb의 pk가 될 값
-  def set_ddb_id(changeset) do
-    case changeset do
-      %{valid?: true, data: %{id: id}} ->
-        ddb_id = "talk_room##{id}"
+  @doc """
+  채팅방을 생성
+  """
+  def create(attrs) do
+    %__MODULE__{}
+    |> changeset(attrs)
+    |> Repo.insert()
+  end
 
-        # ddb_id 업데이트
-        changeset.data
-        |> Ecto.Changeset.change(%{ddb_id: ddb_id})
-        |> Repo.update()
+  @doc """
+  채팅방의 DynamoDB ID를 설정
+  """
+  def set_ddb_id(%__MODULE__{} = room) do
+    ddb_id = "talk_room##{room.id}"
 
-        {:ok, changeset}
+    room
+    |> Ecto.Changeset.change(%{ddb_id: ddb_id})
+    |> Repo.update()
+  end
 
-      _ ->
-        {:error, changeset}
+  @doc """
+  채팅방의 마지막 활동 시간을 업데이트합니다.
+  """
+  def touch_activity(room_id) do
+    {count, _} =
+      from(r in __MODULE__, where: r.id == ^room_id)
+      |> Repo.update_all(set: [last_activity_at: DateTime.utc_now()])
+
+    if count > 0, do: :ok, else: {:error, :not_found}
+  end
+
+  @doc """
+  ID로 채팅방을 조회합니다.
+  """
+  def get(id) do
+    case Repo.get(__MODULE__, id) do
+      nil -> {:error, {:not_found, :talk_room}}
+      room -> {:ok, room}
     end
+  end
+
+  @doc """
+  모든 채팅방 목록을 조회합니다.
+  """
+  def list do
+    Repo.all(__MODULE__)
   end
 end

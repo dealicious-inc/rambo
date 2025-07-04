@@ -1,6 +1,5 @@
 defmodule Rambo.Users.User do
-  use Ecto.Schema
-  import Ecto.Changeset
+  use Rambo.Schema
 
   schema "users" do
     field :name, :string
@@ -13,5 +12,13 @@ defmodule Rambo.Users.User do
     user
     |> cast(attrs, [:name, :deleted_at])
     |> validate_required([:name])
+  end
+
+  def get_active_user(id) do
+    case Repo.get(__MODULE__, id) do
+      nil -> {:error, {:not_found, :user}}
+      %__MODULE__{deleted_at: nil} = user -> {:ok, user}
+      %__MODULE__{} -> {:error, :user_deleted}
+    end
   end
 end
